@@ -1,8 +1,8 @@
 package cat.joanpujol.smasolar.modbus;
 
-import io.reactivex.Single;
+import reactor.core.publisher.Mono;
 
 /** Interface to read a single register. Used to do IoC on SmaModbusClient. */
 public interface ModbusRegisterReader {
-  <T> Single<T> readRegister(ModbusRegister<T> register, int unitId);
+	<T> Mono<T> readRegister(ModbusRegister<T> register, int unitId);
 }

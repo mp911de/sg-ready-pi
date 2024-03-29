@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready.config;
+package biz.paluch.sgreadypi.config;
 
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;

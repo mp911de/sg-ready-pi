@@ -9,44 +9,38 @@ import io.netty.channel.socket.InternetProtocolFamily;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 /**
  * Create an observable that provides Emeter lectures. This observable is cold and can only be
  * subscribed once. When observable is subscribed a datagram channel is created that listens to
  * Emeter multicast group
  */
-public class EMeterCreateObservableImpl implements ObservableOnSubscribe<EMeterLecture> {
+public class EMeterCreateObservableImpl {
   private static final Logger logger = LoggerFactory.getLogger(EMeterCreateObservableImpl.class);
 
   private EMeterConfig config;
   private boolean initialized = false;
-  private ObservableEmitter<EMeterLecture> emitter;
   private AbstractChannel channel;
 
   public EMeterCreateObservableImpl(EMeterConfig config) {
     this.config = config;
   }
 
-  public Observable<EMeterLecture> create() {
-    return Observable.create(this);
-  }
+  public Flux<EMeterLecture> create() {
+    return Flux.create(sink -> {
 
-  @Override
-  public void subscribe(ObservableEmitter<EMeterLecture> emitter) throws Exception {
-    if (initialized)
+
+        if (initialized)
       throw new IllegalStateException(
           "Can't subscribe twice, it's observable is expected to be shared");
 
-    this.emitter = emitter;
-
-    emitter.setCancellable(
+    sink.onCancel(
         () -> {
           // Close channel when subscriber is unsubscribed
           if (channel != null) channel.close();
@@ -59,18 +53,21 @@ public class EMeterCreateObservableImpl implements ObservableOnSubscribe<EMeterL
           @Override
           protected void channelRead0(ChannelHandlerContext ctx, EMeterLecture msg)
               throws Exception {
-            emitter.onNext(msg);
+            sink.next(msg);
           }
         };
-    startMulticastChannelReceiver(processor);
+    startMulticastChannelReceiver(processor, sink);
+    });
   }
+
 
   /**
    * Starts a multicast channel receiver creating the channel and listening to it
    *
    * @param processor Processor used to notify lectures to observer
+   * @param sink
    */
-  private void startMulticastChannelReceiver(SimpleChannelInboundHandler<EMeterLecture> processor) {
+  private void startMulticastChannelReceiver(SimpleChannelInboundHandler<EMeterLecture> processor, FluxSink<EMeterLecture> sink) {
     try {
       AbstractChannel datagramChannel = createChannel(config, processor);
       this.channel = datagramChannel;
@@ -78,12 +75,12 @@ public class EMeterCreateObservableImpl implements ObservableOnSubscribe<EMeterL
           .closeFuture()
           .addListener(
               future -> {
-                if (future.isSuccess()) emitter.onComplete();
-                else emitter.onError(future.cause());
+                if (future.isSuccess()) sink.complete();
+                else sink.error(future.cause());
               });
     } catch (InterruptedException | SocketException e) {
       logger.error("Error creating channel", e);
-      emitter.onError(e);
+      sink.error(e);
     }
   }
 

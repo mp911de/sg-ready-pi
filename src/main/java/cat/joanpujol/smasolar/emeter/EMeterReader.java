@@ -1,8 +1,7 @@
 package cat.joanpujol.smasolar.emeter;
 
 import cat.joanpujol.smasolar.emeter.impl.EMeterCreateObservableImpl;
-import io.reactivex.Observable;
-import io.reactivex.Scheduler;
+import reactor.core.publisher.Flux;
 
 /** Provides an interface to cotinously observe emeter lectures by joining Emeter multicast group */
 public class EMeterReader {
@@ -31,8 +30,8 @@ public class EMeterReader {
    * <p>Subscribed observers should not do blocking operations or must use it's own scheduler using
    * {@link Observable#observeOn(Scheduler)}}
    */
-  public final Observable<EMeterLecture> create() {
-    return Observable.create(createObservable()).share();
+  public final Flux<EMeterLecture> create() {
+    return create().share();
   }
 
   // Exposed only for testing purpouses

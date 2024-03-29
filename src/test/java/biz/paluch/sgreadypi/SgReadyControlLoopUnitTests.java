@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready;
+package biz.paluch.sgreadypi;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.sample.sgready.provider.SunnyHomeManagerService;
+import biz.paluch.sgreadypi.gpio.SgReadyStateConsumer;
+import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
@@ -36,11 +37,9 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SgReadyControlLoopUnitTests {
 
-	@Mock
-	PowerGeneratorService inverters;
+	@Mock PowerGeneratorService inverters;
 
-	@Mock
-	SunnyHomeManagerService powerMeter;
+	@Mock SunnyHomeManagerService powerMeter;
 
 	SgReadyProperties properties = new SgReadyProperties();
 
@@ -51,7 +50,7 @@ class SgReadyControlLoopUnitTests {
 
 		properties.setHeatPumpPowerConsumption(Quantities.getQuantity(100, Units.WATT));
 
-		controller = new SgReadyControlLoop(inverters, powerMeter, properties);
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties);
 		when(inverters.hasData()).thenReturn(true);
 		when(powerMeter.hasData()).thenReturn(true);
 	}
@@ -63,7 +62,7 @@ class SgReadyControlLoopUnitTests {
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(0, Units.PERCENT));
 		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
 
-		assertThat(controller.createState()).isEqualTo(SgReadyControlLoop.SgReadyState.NORMAL);
+		assertThat(controller.createState()).isEqualTo(SgReadyState.NORMAL);
 	}
 
 	@Test
@@ -73,7 +72,7 @@ class SgReadyControlLoopUnitTests {
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(20, Units.PERCENT));
 		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
 
-		assertThat(controller.createState()).isEqualTo(SgReadyControlLoop.SgReadyState.AVAILABLE_PV);
+		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}
 
 	@Test
@@ -83,7 +82,7 @@ class SgReadyControlLoopUnitTests {
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
 		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
 
-		assertThat(controller.createState()).isEqualTo(SgReadyControlLoop.SgReadyState.EXCESS_PV);
+		assertThat(controller.createState()).isEqualTo(SgReadyState.EXCESS_PV);
 	}
 
 	@Test
@@ -94,10 +93,10 @@ class SgReadyControlLoopUnitTests {
 		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
 
 		controller.control();
-		assertThat(controller.getState()).isEqualTo(SgReadyControlLoop.SgReadyState.EXCESS_PV);
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
 
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(60, Units.PERCENT));
-		assertThat(controller.createState()).isEqualTo(SgReadyControlLoop.SgReadyState.EXCESS_PV);
+		assertThat(controller.createState()).isEqualTo(SgReadyState.EXCESS_PV);
 	}
 
 	@Test
@@ -108,10 +107,10 @@ class SgReadyControlLoopUnitTests {
 		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
 
 		controller.control();
-		assertThat(controller.getState()).isEqualTo(SgReadyControlLoop.SgReadyState.EXCESS_PV);
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
 
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(50, Units.PERCENT));
-		assertThat(controller.createState()).isEqualTo(SgReadyControlLoop.SgReadyState.AVAILABLE_PV);
+		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}
 
 	@Test
@@ -123,6 +122,6 @@ class SgReadyControlLoopUnitTests {
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(60, Units.PERCENT));
 		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
 
-		assertThat(controller.createState()).isEqualTo(SgReadyControlLoop.SgReadyState.AVAILABLE_PV);
+		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}
 }

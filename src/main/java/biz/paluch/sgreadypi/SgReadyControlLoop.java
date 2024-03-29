@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready;
+package biz.paluch.sgreadypi;
 
+import biz.paluch.sgreadypi.gpio.SgReadyStateConsumer;
+import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,11 +26,10 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 
+import org.slf4j.event.Level;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import com.sample.sgready.provider.SunnyHomeManagerService;
-import org.slf4j.event.Level;
 
 /**
  * Controller to determine the SG ready state.
@@ -43,14 +44,16 @@ public class SgReadyControlLoop {
 
 	private final SunnyHomeManagerService powerMeter;
 
+	private final SgReadyStateConsumer stateConsumer;
 	private final SgReadyProperties properties;
 
 	@Getter private volatile SgReadyState state = SgReadyState.NORMAL;
 
 	public SgReadyControlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
-			SgReadyProperties properties) {
+			SgReadyStateConsumer stateConsumer, SgReadyProperties properties) {
 		this.inverters = inverters;
 		this.powerMeter = powerMeter;
+		this.stateConsumer = stateConsumer;
 		this.properties = properties;
 	}
 
@@ -72,8 +75,8 @@ public class SgReadyControlLoop {
 			this.state = state;
 
 			logState(this.state, ingress, generatorPower, soc, changed);
+			stateConsumer.onState(state);
 		});
-
 	}
 
 	SgReadyState createState() {
@@ -171,40 +174,6 @@ public class SgReadyControlLoop {
 	interface PowerConsumer {
 
 		void apply(Quantity<Power> ingress, Quantity<Power> generatorPower, Quantity<Dimensionless> soc);
-	}
-
-	/**
-	 * SG Ready Protocol state mapping.
-	 *
-	 * @param a
-	 * @param b
-	 */
-	public record SgReadyState(boolean a, boolean b) {
-
-		/**
-		 * Locked, reduce heating time up to 2 hrs for a day.
-		 */
-		public static final SgReadyState BLOCKED = new SgReadyState(true, false);
-
-		/**
-		 * Normal operations.
-		 */
-		public static final SgReadyState NORMAL = new SgReadyState(false, false);
-
-		/**
-		 * Recommendation to turn heating on and increase temperature.
-		 */
-		public static final SgReadyState AVAILABLE_PV = new SgReadyState(false, true);
-
-		/**
-		 * Signal to turn on heating. Can also increase temperature.
-		 */
-		public static final SgReadyState EXCESS_PV = new SgReadyState(true, true);
-
-		@Override
-		public String toString() {
-			return "(%s:%s)".formatted(a ? 1 : 0, b ? 1 : 0);
-		}
 	}
 
 }

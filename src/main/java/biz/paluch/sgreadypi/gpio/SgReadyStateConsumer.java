@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready;
+package biz.paluch.sgreadypi.gpio;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import biz.paluch.sgreadypi.SgReadyState;
 
-@SpringBootApplication
-@EnableConfigurationProperties(SgReadyProperties.class)
-@EnableScheduling
-public class SgReadyApplication {
+/**
+ * SG Ready state consumer to apply the state.
+ *
+ * @author Mark Paluch
+ */
+@FunctionalInterface
+public interface SgReadyStateConsumer {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SgReadyApplication.class, args);
-	}
-
+	/**
+	 * Consumer for a state change.
+	 *
+	 * @param state
+	 */
+	void onState(SgReadyState state);
 }

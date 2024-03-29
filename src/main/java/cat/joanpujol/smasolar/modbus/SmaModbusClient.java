@@ -6,8 +6,9 @@ import com.digitalpetri.modbus.requests.ReadInputRegistersRequest;
 import com.digitalpetri.modbus.responses.ReadInputRegistersResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,23 +49,23 @@ public class SmaModbusClient implements ModbusRegisterReader {
    */
   protected void customizeModbusConfiguration(ModbusTcpMasterConfig.Builder builder) {}
 
-  public Completable connect() {
-    return Completable.fromFuture(ensureModbusClient().connect());
+  public Mono<Void> connect() {
+    return Mono.fromFuture(ensureModbusClient().connect()).then();
   }
 
-  public Completable disconnect() {
-    return Completable.fromFuture(ensureModbusClient().disconnect());
+  public Mono<Void> disconnect() {
+    return Mono.fromFuture(ensureModbusClient().disconnect()).then();
   }
 
-  public <T> Single<T> readRegister(ModbusRegister<T> reg) {
+  public <T> Mono<T> readRegister(ModbusRegister<T> reg) {
     return readRegister(reg, device.calculateMainUnitId(null));
   }
 
-  public <T> Single<T> readRegister(ModbusRegister<T> reg, int unitId) {
+  public <T> Mono<T> readRegister(ModbusRegister<T> reg, int unitId) {
     var request =
         new ReadInputRegistersRequest(reg.getRegisterNumber(), reg.getDataType().getLength() / 2);
     var futureResult = ensureModbusClient().sendRequest(request, unitId);
-    return Single.fromFuture(futureResult)
+    return Mono.fromFuture(futureResult)
         .map(
             response -> {
               ByteBuf registers = ((ReadInputRegistersResponse) response).getRegisters();
@@ -75,14 +76,14 @@ public class SmaModbusClient implements ModbusRegisterReader {
             });
   }
 
-  public Single<SmaModbusResponse> read(SmaModbusRequest request) {
+  public Mono<SmaModbusResponse> read(SmaModbusRequest request) {
     if (request.isAtomic()) {
       return readAtomicRequest(request);
     } else {
       List<SmaModbusRequest> atomicRequests = request.subdivideInAtomicRequests();
       var observables =
           atomicRequests.stream().map(ar -> readAtomicRequest(ar)).collect(Collectors.toList());
-      return Single.zip(
+      return Flux.zip(
           observables,
           (Object[] responses) -> {
             SmaModbusResponse joinedResponse = new SmaModbusResponse();
@@ -93,18 +94,18 @@ public class SmaModbusClient implements ModbusRegisterReader {
                   .forEach((k, v) -> joinedResponse.setRegisterValue(k, v));
             }
             return joinedResponse;
-          });
+          }).single();
     }
   }
 
-  private Single<SmaModbusResponse> readAtomicRequest(SmaModbusRequest request) {
+  private Mono<SmaModbusResponse> readAtomicRequest(SmaModbusRequest request) {
     var modbusreq =
         new ReadInputRegistersRequest(
             request.getFirstRegisterNumber(),
             request.calculateNumberOfRegistersToReadInAtomicRequest());
     var futureResult =
         ensureModbusClient().sendRequest(modbusreq, getUnitIdToUseForRequest(request));
-    return Single.fromFuture(futureResult)
+    return Mono.fromFuture(futureResult)
         .map(
             modbusResponse -> {
               ByteBuf registers = ((ReadInputRegistersResponse) modbusResponse).getRegisters();

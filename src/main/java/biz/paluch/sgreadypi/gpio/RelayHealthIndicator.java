@@ -13,25 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready;
+package biz.paluch.sgreadypi.gpio;
 
-import javax.measure.Quantity;
-import javax.measure.quantity.Power;
+import lombok.Value;
+
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.stereotype.Component;
 
 /**
- * Power meter interface providing power ingress from an external power grid.
- *
  * @author Mark Paluch
  */
-public interface PowerMeter {
+@Component
+@Value
+class RelayHealthIndicator implements HealthIndicator {
 
-	/**
-	 * @return power ingress from an external power grid.
-	 */
-	Quantity<Power> getIngress();
+    PiRelHat3Ch relay;
 
-	/**
-	 * @return {@code true} if the service is alive and has recent data.
-	 */
-	boolean hasData();
+    @Override
+    public Health health() {
+
+        Health.Builder builder = Health.up();
+
+        builder.withDetail("ch1", relay.getCh1().state().name());
+        builder.withDetail("ch2", relay.getCh2().state().name());
+
+        return builder.build();
+    }
 }

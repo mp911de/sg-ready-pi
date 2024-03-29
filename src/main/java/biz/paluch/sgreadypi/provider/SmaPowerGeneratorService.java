@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready.provider;
+package biz.paluch.sgreadypi.provider;
 
 import cat.joanpujol.smasolar.modbus.ModbusRegister;
 import cat.joanpujol.smasolar.modbus.SmaModbusClient;
 import cat.joanpujol.smasolar.modbus.SmaModbusRequest;
 import cat.joanpujol.smasolar.modbus.SmaModbusResponse;
-import com.sample.sgready.PowerGeneratorService;
-import com.sample.sgready.SgReadyProperties;
+import biz.paluch.sgreadypi.PowerGeneratorService;
+import biz.paluch.sgreadypi.SgReadyProperties;
 import lombok.extern.slf4j.Slf4j;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
@@ -39,13 +39,11 @@ import javax.measure.quantity.Power;
 
 import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Mark Paluch
  */
 @Slf4j
-@Component
 public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorService {
 
 	private final AtomicBoolean running = new AtomicBoolean(false);

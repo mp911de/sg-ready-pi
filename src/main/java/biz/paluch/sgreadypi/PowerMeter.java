@@ -13,35 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready;
-
-import tech.units.indriya.quantity.Quantities;
-import tech.units.indriya.unit.Units;
+package biz.paluch.sgreadypi;
 
 import javax.measure.Quantity;
-import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 
 /**
- * Power generator service (battery, inverter, …) that generates power.
+ * Power meter interface providing power ingress from an external power grid.
  *
  * @author Mark Paluch
  */
-public interface PowerGeneratorService {
+public interface PowerMeter {
 
 	/**
-	 * @return percentage of battery charge state.
+	 * @return averaged power ingress from an external power grid.
 	 */
-	default Quantity<Dimensionless> getBatteryStateOfCharge() {
-		return Quantities.getQuantity(0, Units.PERCENT);
-	}
+	Quantity<Power> getIngress();
 
 	/**
-	 * @return available generator power in {@link tech.units.indriya.unit.Units#WATT}.
+	 * @return momentary power ingress from an external power grid.
 	 */
-	default Quantity<Power> getGeneratorPower() {
-		return Quantities.getQuantity(0, Units.WATT);
-	}
+	Quantity<Power> getMomentaryIngress();
+
+	/**
+	 * @return averaged power egress to an external power grid.
+	 */
+	Quantity<Power> getEgress();
+
+	/**
+	 * @return momentary power egress to an external power grid.
+	 */
+	Quantity<Power> getMomentaryEgress();
 
 	/**
 	 * @return {@code true} if the service is alive and has recent data.

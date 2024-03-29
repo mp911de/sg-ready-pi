@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready.provider;
+package biz.paluch.sgreadypi.provider;
 
-import com.sample.sgready.PowerMeter;
-import com.sample.sgready.SgReadyProperties;
 import io.github.joblo2213.sma.speedwire.Speedwire;
 import io.github.joblo2213.sma.speedwire.protocol.measuringChannels.EnergyMeterChannels;
+import io.github.joblo2213.sma.speedwire.protocol.telegrams.DiscoveryResponse;
 import io.github.joblo2213.sma.speedwire.protocol.telegrams.EnergyMeterTelegram;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -26,34 +25,60 @@ import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Power;
 
 import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Service;
+
+import biz.paluch.sgreadypi.PowerMeter;
+
+import com.codahale.metrics.SlidingTimeWindowMovingAverages;
 
 /**
+ * {@link PowerMeter} implementation for Sunny Home Manager 2.0.
+ *
  * @author Mark Paluch
+ * @link <a href="https://www.sma.de/produkte/monitoring-control/sunny-home-manager">Sunny Home Manager 2.0</a>
  */
-@Service
 @Slf4j
 public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 
 	private Speedwire speedwire;
-	private final SgReadyProperties properties;
+	private final long powerMeterId;
 
 	private volatile int ingress;
+	private volatile int egress;
+
+	private final Average averagesIn = new Average(Duration.ofMinutes(1));
+	private final Average averagesOut = new Average(Duration.ofMinutes(1));
+
 	@Getter protected volatile Instant reading = Instant.MIN;
 
-	public SunnyHomeManagerService(SgReadyProperties properties) {
-		this.properties = properties;
+	public SunnyHomeManagerService(long powerMeterId) {
+		this.powerMeterId = powerMeterId;
 	}
 
 	@Override
 	public Quantity<Power> getIngress() {
+		return Quantities.getQuantity(Math.round(averagesIn.getAverage()), Units.WATT);
+	}
+
+	@Override
+	public Quantity<Power> getMomentaryIngress() {
 		return Quantities.getQuantity(ingress, Units.WATT);
+	}
+
+	@Override
+	public Quantity<Power> getEgress() {
+		return Quantities.getQuantity(Math.round(averagesOut.getAverage()), Units.WATT);
+	}
+
+	@Override
+	public Quantity<Power> getMomentaryEgress() {
+		return Quantities.getQuantity(egress, Units.WATT);
 	}
 
 	@Override
@@ -67,21 +92,32 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 			this.speedwire.onTimeout(() -> log.warn("Speedwire timeout"));
 
 			speedwire.onData(data -> {
+
+				if (data instanceof DiscoveryResponse dr) {
+					log.info("Discovered Power Meter " + dr.getOrigin().getHostAddress());
+				}
+
 				if (data instanceof EnergyMeterTelegram em) {
 
 					// device information
 					long powerMeterId = em.getSerNo().longValueExact();
 
-					if (powerMeterId == properties.getPowerMeterId()) {
+					if (powerMeterId == this.powerMeterId) {
 
-						Quantity<Power> w = em.getData(EnergyMeterChannels.TOTAL_P_IN).to(Units.WATT);
-						ingress = w.getValue().intValue();
+						Quantity<Power> in = em.getData(EnergyMeterChannels.TOTAL_P_IN).to(Units.WATT);
+						ingress = in.getValue().intValue();
+						averagesIn.add(ingress);
+
+						Quantity<Power> out = em.getData(EnergyMeterChannels.TOTAL_P_OUT).to(Units.WATT);
+						egress = out.getValue().intValue();
+						averagesOut.add(egress);
 						reading = Instant.now();
 					}
 				}
 			});
 
 			this.speedwire.start();
+			this.speedwire.sendDiscoveryRequest();
 		} catch (IOException e) {
 			throw new IllegalStateException(e);
 		}

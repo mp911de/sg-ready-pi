@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.sgready;
+package biz.paluch.sgreadypi;
 
+import biz.paluch.sgreadypi.gpio.GpioProperties;
 import lombok.Data;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
@@ -47,6 +48,8 @@ public class SgReadyProperties {
 
 	Duration queryInterval = Duration.ofSeconds(10);
 
+	Duration averaging = Duration.ofSeconds(60);
+
 	/**
 	 * Power consumption of the heat pump in Watt.
 	 */
@@ -61,6 +64,8 @@ public class SgReadyProperties {
 	Levels battery = new Levels(Quantities.getQuantity(20, Units.PERCENT), Quantities.getQuantity(80, Units.PERCENT),
 			Quantities.getQuantity(60, Units.PERCENT));
 
+	GpioProperties gpio;
+
 	/**
 	 * @param pvAvailable Battery state of Charge indicating unused PV energy. Used to recommend heat pump temperature
 	 *          increase/energy availability.
@@ -69,7 +74,8 @@ public class SgReadyProperties {
 	 * @param pvExcessOff Battery state of Charge to turn off forced heat pump usage. Should be lower than
 	 *          {@code pvExcessOff} to disable flickering (hysteresis).
 	 */
-	record Levels(Quantity<Dimensionless> pvAvailable, Quantity<Dimensionless> pvExcessOn,
+	public record Levels(Quantity<Dimensionless> pvAvailable, Quantity<Dimensionless> pvExcessOn,
 			Quantity<Dimensionless> pvExcessOff) {
 	}
+
 }
