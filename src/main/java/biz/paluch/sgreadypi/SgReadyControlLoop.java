@@ -15,7 +15,7 @@
  */
 package biz.paluch.sgreadypi;
 
-import biz.paluch.sgreadypi.gpio.SgReadyStateConsumer;
+import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

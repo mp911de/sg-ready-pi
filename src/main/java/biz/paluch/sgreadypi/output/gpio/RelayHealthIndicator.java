@@ -13,33 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi;
+package biz.paluch.sgreadypi.output.gpio;
 
 import lombok.Value;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
+import com.pi4j.io.gpio.digital.DigitalOutput;
+import com.pi4j.io.gpio.digital.DigitalState;
 
 /**
- * Health indicator displaying the SG ready state and underlying values.
- *
  * @author Mark Paluch
  */
 @Component
 @Value
-public class SgReadyHealthIndicator implements HealthIndicator {
+class RelayHealthIndicator implements HealthIndicator {
 
-	SgReadyControlLoop controller;
+	PiRelHat3Ch relay;
 
 	@Override
 	public Health health() {
 
 		Health.Builder builder = Health.up();
 
-		builder.withDetail("sg-ready", controller.getState().toString());
+		builder.withDetail("ch1", toString(relay.getCh1()));
+		builder.withDetail("ch2", toString(relay.getCh2()));
 
 		return builder.build();
 	}
 
+	private String toString(DigitalOutput relay) {
+		return relay.state() == DigitalState.LOW ? "closed" : "open";
+	}
 }

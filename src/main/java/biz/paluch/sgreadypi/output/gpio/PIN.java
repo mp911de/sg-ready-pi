@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.gpio;
+package biz.paluch.sgreadypi.output.gpio;
 
 /**
  * Helper Class, used as Raspberry-Pi pin-numbering. Is helpful to see, which pin can act as what I/O provider

@@ -13,27 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.gpio;
+package biz.paluch.sgreadypi.output.gpio;
 
 import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.output.DebounceStateConsumer;
 
+import java.time.Duration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.TaskScheduler;
 
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
-import com.pi4j.library.pigpio.PiGpio;
-import com.pi4j.library.pigpio.PiGpioMode;
-import com.pi4j.library.pigpio.PiGpioPud;
-import com.pi4j.library.pigpio.PiGpioState;
-import com.pi4j.library.pigpio.PiGpioStateChangeListener;
-import com.pi4j.plugin.pigpio.provider.gpio.digital.PiGpioDigitalInputProvider;
-import com.pi4j.plugin.pigpio.provider.gpio.digital.PiGpioDigitalOutputProvider;
-import com.pi4j.plugin.pigpio.provider.pwm.PiGpioPwmProvider;
-import com.pi4j.plugin.pigpio.provider.serial.PiGpioSerialProvider;
-import com.pi4j.plugin.pigpio.provider.spi.PiGpioSpiProvider;
 
 /**
  * GPIO configuration.
@@ -50,6 +43,11 @@ public class GpioConfiguration {
 		GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
 
 		return new PiRelHat3Ch(context, rpi3Ch.pinA(), rpi3Ch.pinB());
+	}
+	@Bean
+	@Primary
+	DebounceStateConsumer debounce(PiRelHat3Ch relay, TaskScheduler scheduler) {
+		return new DebounceStateConsumer(relay, scheduler, Duration.ofMinutes(1));
 	}
 
 	@Bean(destroyMethod = "shutdown")

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.gpio;
+package biz.paluch.sgreadypi.output.gpio;
 
-import jakarta.websocket.server.PathParam;
 import lombok.Value;
 
 import org.springframework.http.HttpStatus;

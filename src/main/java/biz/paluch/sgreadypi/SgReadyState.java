@@ -21,30 +21,30 @@ package biz.paluch.sgreadypi;
  * @param a
  * @param b
  */
-public record SgReadyState(boolean a, boolean b) {
+public record SgReadyState(String name, boolean a, boolean b) {
 
 	/**
 	 * Locked, reduce heating time up to 2 hrs for a day.
 	 */
-	public static final SgReadyState BLOCKED = new SgReadyState(true, false);
+	public static final SgReadyState BLOCKED = new SgReadyState("BLOCKED", true, false);
 
 	/**
 	 * Normal operations.
 	 */
-	public static final SgReadyState NORMAL = new SgReadyState(false, false);
+	public static final SgReadyState NORMAL = new SgReadyState("NORMAL", false, false);
 
 	/**
 	 * Recommendation to turn heating on and increase temperature.
 	 */
-	public static final SgReadyState AVAILABLE_PV = new SgReadyState(false, true);
+	public static final SgReadyState AVAILABLE_PV = new SgReadyState("AVAILABLE_PV", false, true);
 
 	/**
 	 * Signal to turn on heating. Can also increase temperature.
 	 */
-	public static final SgReadyState EXCESS_PV = new SgReadyState(true, true);
+	public static final SgReadyState EXCESS_PV = new SgReadyState("EXCESS_PV", true, true);
 
 	@Override
 	public String toString() {
-		return "(%s:%s)".formatted(a ? 1 : 0, b ? 1 : 0);
+		return "%s (%s:%s)".formatted(name(), a ? 1 : 0, b ? 1 : 0);
 	}
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.gpio;
+package biz.paluch.sgreadypi.output;
 
 import lombok.Value;
 
@@ -24,20 +24,21 @@ import org.springframework.stereotype.Component;
 /**
  * @author Mark Paluch
  */
-@Component
 @Value
-class RelayHealthIndicator implements HealthIndicator {
+@Component
+class DebounceHealthIndicator implements HealthIndicator {
 
-    PiRelHat3Ch relay;
+    DebounceStateConsumer consumer;
 
     @Override
     public Health health() {
 
-        Health.Builder builder = Health.up();
-
-        builder.withDetail("ch1", relay.getCh1().state().name());
-        builder.withDetail("ch2", relay.getCh2().state().name());
-
-        return builder.build();
+        return Health.up()
+                .withDetail("current", consumer.getCurrent().toString())
+                .withDetail("next", consumer.getNext().toString())
+                .withDetail("next-update", consumer.getNextUpdate())
+                .withDetail("last-update", consumer.getLastUpdate())
+                .withDetail("synchronized", consumer.isSynchronized())
+                .build();
     }
 }

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.gpio;
+package biz.paluch.sgreadypi.output.gpio;
 
 import biz.paluch.sgreadypi.SgReadyState;
+import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
@@ -73,11 +74,15 @@ public class PiRelHat3Ch implements SgReadyStateConsumer {
 	@Override
 	public void onState(SgReadyState state) {
 
-		this.ch1.state(state.a() ? DigitalState.LOW : DigitalState.HIGH);
-		this.ch2.state(state.b() ? DigitalState.LOW : DigitalState.HIGH);
+		this.ch1.state(getState(state.a()));
+		this.ch2.state(getState(state.b()));
 	}
 
-	 DigitalOutput getCh1() {
+	private static DigitalState getState(boolean state) {
+		return state ? DigitalState.LOW : DigitalState.HIGH;
+	}
+
+	DigitalOutput getCh1() {
 		return ch1;
 	}
 

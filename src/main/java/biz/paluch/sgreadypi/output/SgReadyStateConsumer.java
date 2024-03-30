@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.gpio;
+package biz.paluch.sgreadypi.output;
+
+import biz.paluch.sgreadypi.SgReadyState;
 
 /**
+ * SG Ready state consumer to apply the state.
+ *
  * @author Mark Paluch
  */
-public record GpioProperties(Rpi3Ch rpi3Ch) {
+@FunctionalInterface
+public interface SgReadyStateConsumer {
 
 	/**
-	 * 3 Relay configuration of which channel 3 is unused.
+	 * Consumer for a state change.
 	 *
-	 * @param pinA GPIO (BCM) pin for SG Ready A.
-	 * @param pinB GPIO (BCM) pin for SG Ready B.
+	 * @param state
 	 */
-	public record Rpi3Ch(int pinA, int pinB) {
-
-	}
-
+	void onState(SgReadyState state);
 }

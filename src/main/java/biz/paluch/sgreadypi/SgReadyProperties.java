@@ -15,7 +15,7 @@
  */
 package biz.paluch.sgreadypi;
 
-import biz.paluch.sgreadypi.gpio.GpioProperties;
+import biz.paluch.sgreadypi.output.gpio.GpioProperties;
 import lombok.Data;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;

@@ -18,7 +18,7 @@ package biz.paluch.sgreadypi;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import biz.paluch.sgreadypi.gpio.SgReadyStateConsumer;
+import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;

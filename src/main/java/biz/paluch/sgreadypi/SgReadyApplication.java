@@ -15,24 +15,10 @@
  */
 package biz.paluch.sgreadypi;
 
-import biz.paluch.sgreadypi.gpio.GpioConfiguration;
-import biz.paluch.sgreadypi.gpio.GpioProperties;
-import biz.paluch.sgreadypi.gpio.PiRelHat3Ch;
-
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import com.pi4j.Pi4J;
-import com.pi4j.context.Context;
-import com.pi4j.library.pigpio.PiGpio;
-import com.pi4j.plugin.pigpio.provider.gpio.digital.PiGpioDigitalInputProvider;
-import com.pi4j.plugin.pigpio.provider.gpio.digital.PiGpioDigitalOutputProvider;
-import com.pi4j.plugin.pigpio.provider.pwm.PiGpioPwmProvider;
-import com.pi4j.plugin.pigpio.provider.serial.PiGpioSerialProvider;
-import com.pi4j.plugin.pigpio.provider.spi.PiGpioSpiProvider;
 
 /**
  * Application entry point.

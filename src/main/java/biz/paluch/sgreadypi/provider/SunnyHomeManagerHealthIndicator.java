@@ -20,6 +20,7 @@ import lombok.Value;
 import javax.measure.Quantity;
 import javax.measure.quantity.Power;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -32,7 +33,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Value
-class SunnyHomeManagerHealthContributor implements HealthIndicator {
+class SunnyHomeManagerHealthIndicator implements HealthIndicator {
 
 	SunnyHomeManagerService service;
 
@@ -58,12 +59,11 @@ class SunnyHomeManagerHealthContributor implements HealthIndicator {
 		Quantity<Power> egress = service.getEgress();
 		Quantity<Power> momentaryEgress = service.getMomentaryEgress();
 
-		Map<String, Object> powerMeter = Map.of("last-update", powerMeterReading,
-				"ingress", ingress.toString(),
-				"momentary-ingress", momentaryIngress.toString(),
-				"egress", egress.toString(),
-				"momentary-egress",	momentaryEgress.toString());
-
-		builder.withDetail("power-meter", powerMeter);
+		Map<String, Object> powerMeter = new LinkedHashMap<>();
+		builder.withDetail("last-update", powerMeterReading);
+		builder.withDetail("ingress", ingress.toString());
+		builder.withDetail("ingress-momentary", momentaryIngress.toString());
+		builder.withDetail("egress", egress.toString());
+		builder.withDetail("egress-momentary", momentaryEgress.toString());
 	}
 }
