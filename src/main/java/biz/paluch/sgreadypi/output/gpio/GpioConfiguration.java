@@ -44,6 +44,10 @@ public class GpioConfiguration {
 
 		return new PiRelHat3Ch(context, rpi3Ch.pinA(), rpi3Ch.pinB());
 	}
+
+	/**
+	 * Debouncer to avoid relay wear due to hysteresis.
+	 */
 	@Bean
 	@Primary
 	DebounceStateConsumer debounce(PiRelHat3Ch relay, TaskScheduler scheduler) {
@@ -51,7 +55,8 @@ public class GpioConfiguration {
 	}
 
 	@Bean(destroyMethod = "shutdown")
-	Context context(SgReadyProperties properties) {
+	Context context() {
 		return Pi4J.newAutoContextAllowMocks();
 	}
+
 }

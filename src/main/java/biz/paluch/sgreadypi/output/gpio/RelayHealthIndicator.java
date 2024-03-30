@@ -43,7 +43,8 @@ class RelayHealthIndicator implements HealthIndicator {
 		return builder.build();
 	}
 
-	private String toString(DigitalOutput relay) {
+	private static String toString(DigitalOutput relay) {
 		return relay.state() == DigitalState.LOW ? "closed" : "open";
 	}
+
 }

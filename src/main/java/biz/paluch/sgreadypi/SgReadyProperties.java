@@ -30,6 +30,8 @@ import javax.measure.quantity.Power;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Configuration properties for the SG-Ready control application.
+ * 
  * @author Mark Paluch
  */
 @ConfigurationProperties(prefix = "sg")

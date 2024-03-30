@@ -41,4 +41,5 @@ public class ProviderConfiguration {
 	SmaPowerGeneratorService smaPowerGeneratorService(SgReadyProperties properties, TaskScheduler executorService) {
 		return new SmaPowerGeneratorService(properties, executorService);
 	}
+
 }

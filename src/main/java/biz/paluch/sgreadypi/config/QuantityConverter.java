@@ -52,6 +52,10 @@ public class QuantityConverter implements ConditionalGenericConverter {
 	@Override
 	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 
+		if (source == null) {
+			return null;
+		}
+
 		ResolvableType component = targetType.getResolvableType().getGeneric(0);
 		Unit<?> unit = Units.getInstance().getUnit((Class) component.resolve());
 
@@ -69,4 +73,5 @@ public class QuantityConverter implements ConditionalGenericConverter {
 
 		return Quantities.getQuantity(source.toString());
 	}
+
 }

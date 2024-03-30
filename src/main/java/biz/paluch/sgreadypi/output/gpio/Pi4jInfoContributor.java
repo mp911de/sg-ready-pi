@@ -48,6 +48,7 @@ public class Pi4jInfoContributor implements InfoContributor {
 
 		try {
 			builder.withDetail("pi4jRegistry", context.registry().all());
-		} catch (Exception ex) {}
+		} catch (Exception ignore) {}
 	}
+
 }

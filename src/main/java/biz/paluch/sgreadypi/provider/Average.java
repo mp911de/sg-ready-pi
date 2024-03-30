@@ -22,22 +22,24 @@ import java.util.LinkedList;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 /**
+ * Utility to calculate a moving average for a {@link Duration time window} of data points.
+ * 
  * @author Mark Paluch
  */
-public class Average {
+class Average {
 
 	private final LinkedList<DataPoint> dataPoints = new LinkedList<>();
 
-	private final Duration maxDuration;
+	private final Duration window;
 
-	public Average(Duration maxDuration) {
-		this.maxDuration = maxDuration;
+	public Average(Duration window) {
+		this.window = window;
 	}
 
 	public void add(double value) {
 		synchronized (dataPoints) {
 			Instant now = Instant.now();
-			Instant limit = now.minus(maxDuration);
+			Instant limit = now.minus(window);
 			dataPoints.add(new DataPoint(now, value));
 
 			Iterator<DataPoint> di = dataPoints.descendingIterator();

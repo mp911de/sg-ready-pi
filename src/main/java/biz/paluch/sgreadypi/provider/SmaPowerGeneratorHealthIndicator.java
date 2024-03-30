@@ -66,4 +66,5 @@ class SmaPowerGeneratorHealthIndicator implements HealthIndicator {
 
 		builder.withDetail("inverters", inverters);
 	}
+
 }

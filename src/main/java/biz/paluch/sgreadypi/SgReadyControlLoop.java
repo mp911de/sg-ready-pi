@@ -32,7 +32,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Controller to determine the SG ready state.
+ * Controller to determine the SG ready state. State is determined by power availability using
+ * {@link SgReadyState#AVAILABLE_PV}. Once the available power reaches the battery charging limits then the state
+ * switches to {@link SgReadyState#EXCESS_PV} to ensure consumption by the heater.
  *
  * @author Mark Paluch
  */

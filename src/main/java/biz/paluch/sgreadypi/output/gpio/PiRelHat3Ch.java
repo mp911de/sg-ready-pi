@@ -46,24 +46,22 @@ public class PiRelHat3Ch implements SgReadyStateConsumer {
 
 	public PiRelHat3Ch(Context context, int ch1, int ch2) {
 
-		var ch1Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch1).name("CH1")
-				.address(ch1).shutdown(DigitalState.HIGH)
-				.build();
-		var ch2Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch2).name("CH2")
-				.address(ch2).shutdown(DigitalState.HIGH)
-				.build();
+		var ch1Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch1).name("CH1").address(ch1)
+				.shutdown(DigitalState.HIGH).build();
+		var ch2Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch2).name("CH2").address(ch2)
+				.shutdown(DigitalState.HIGH).build();
 		this.ch1 = context.create(ch1Config);
 		this.ch2 = context.create(ch2Config);
 		this.context = context;
 	}
 
 	@PostConstruct
-	public void postConstruct(){
+	public void postConstruct() {
 		onState(SgReadyState.NORMAL);
 	}
 
 	@PreDestroy
-	public void preDestroy(){
+	public void preDestroy() {
 		try {
 			onState(SgReadyState.NORMAL);
 		} catch (PiGpioException ignored) {
@@ -86,11 +84,12 @@ public class PiRelHat3Ch implements SgReadyStateConsumer {
 		return ch1;
 	}
 
-	 DigitalOutput getCh2() {
+	DigitalOutput getCh2() {
 		return ch2;
 	}
 
-	 DigitalOutput getCh3() {
+	DigitalOutput getCh3() {
 		return ch3;
 	}
+
 }

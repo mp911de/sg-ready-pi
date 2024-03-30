@@ -31,4 +31,5 @@ public interface SgReadyStateConsumer {
 	 * @param state
 	 */
 	void onState(SgReadyState state);
+
 }

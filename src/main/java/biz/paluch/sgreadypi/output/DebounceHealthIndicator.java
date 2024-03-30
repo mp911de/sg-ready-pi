@@ -41,4 +41,5 @@ class DebounceHealthIndicator implements HealthIndicator {
                 .withDetail("synchronized", consumer.isSynchronized())
                 .build();
     }
+
 }

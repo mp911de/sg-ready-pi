@@ -66,4 +66,5 @@ class SunnyHomeManagerHealthIndicator implements HealthIndicator {
 		builder.withDetail("egress", egress.toString());
 		builder.withDetail("egress-momentary", momentaryEgress.toString());
 	}
+
 }

@@ -159,4 +159,5 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 	public record InverterState(int currentActivePower, boolean hasBattery, int batteryCharging, int batteryDischarging,
 			int stateOfCharge, Instant timestamp) {
 	}
+
 }

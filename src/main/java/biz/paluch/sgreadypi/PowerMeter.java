@@ -49,4 +49,5 @@ public interface PowerMeter {
 	 * @return {@code true} if the service is alive and has recent data.
 	 */
 	boolean hasData();
+
 }

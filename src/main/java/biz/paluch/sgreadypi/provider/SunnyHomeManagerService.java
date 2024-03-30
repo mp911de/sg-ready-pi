@@ -46,6 +46,8 @@ import com.codahale.metrics.SlidingTimeWindowMovingAverages;
 @Slf4j
 public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 
+	private static final Duration TIMEOUT = Duration.ofMinutes(1);
+
 	private Speedwire speedwire;
 	private final long powerMeterId;
 
@@ -143,6 +145,7 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 
 	@Override
 	public boolean hasData() {
-		return isRunning() && reading.isAfter(Instant.now().minusSeconds(60));
+		return isRunning() && reading.isAfter(Instant.now().minus(TIMEOUT));
 	}
+
 }

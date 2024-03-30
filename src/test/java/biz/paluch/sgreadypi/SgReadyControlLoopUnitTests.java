@@ -124,4 +124,5 @@ class SgReadyControlLoopUnitTests {
 
 		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}
+
 }
