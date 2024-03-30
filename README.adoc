@@ -1,0 +1,64 @@
+= SG Ready Pi Controller
+
+This application is an SG Ready Controller to determine available power vs. power consumption and derive a SG- Ready State.
+This is done by reading from a power generator such as PV inverter including batteries and comparing egress/ingress to a power meter reading.
+
+https://www.waermepumpe.de/normen-technik/sg-ready/[SG Ready] is a standard to indicate the following states to an eletrical heater:
+
+* Normal State (No indication, `0:0`)
+* Lock (Reduce power consumption, `1:0`)
+* Available Power/Low Tariff (Increase Temperature, Indicate that consuming power now would be favorable, `0:1`)
+* Switch on Heating/Excess Power (Switch on the heater to consume excess power,  `1:1`)
+
+== Hardware
+
+This project is designed to run on RaspberryPi to benefit from a low-power consuming compute platform.
+
+=== SG Ready Control Signal Handlers
+
+SG Ready signal indication uses external relays to close two independent circuits.
+It is similar to using GPIO and pulling an input pin to GND, however, you should expect a potential-free signal source from the heater.
+
+Currently supported:
+
+* https://www.waveshare.com/wiki/RPi_Relay_Board[Waveshare RPi Relay Board]
+
+image:https://www.waveshare.com/w/A6Y79bcq/Kdy80nYY.php?f=Rpi-relay-board-1.jpg&width=600[Waveshare RPi Relay Board,200]
+
+=== Power Meters
+
+Currently supported:
+
+* SMA Sunny Home Manager 2.0 over Speedwire (Multicast)
+
+=== Inverters
+
+Currently supported:
+
+* SMA Tripower over Modbus TCP (more models could be potentially supported)
+
+== Foundation
+
+This project is built with:
+
+* Maven
+* https://github.com/spring-projects/spring-boot[Spring Boot 🍃]
+* https://github.com/Pi4J/pi4j-v2[Pi4J]
+* https://github.com/lujop/smasolarlib[smasolarlib] by https://github.com/lujop[lujop].
+The code is inlined into this repo as there is no artifact available from Maven Central.
+
+== Building from Source
+
+If you want to try out the latest and greatest, the project can be easily built with the https://github.com/takari/maven-wrapper[maven wrapper].
+You also need JDK 17.
+
+[source,bash]
+----
+ $ ./mvnw clean install
+----
+
+If you want to build with the regular `mvn` command, you will need https://maven.apache.org/run-maven/index.html[Maven v3.9.0 or above].
+
+== License
+
+Spring Boot is Open Source software released under the https://www.apache.org/licenses/LICENSE-2.0.html[Apache 2.0 license].

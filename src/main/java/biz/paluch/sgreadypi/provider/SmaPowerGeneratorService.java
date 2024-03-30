@@ -66,7 +66,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 		this.executorService = executorService;
 
 		for (String inverterHost : properties.getInverterHosts()) {
-			clients.put(inverterHost, new SmaModbusClient(inverterHost, 502, registerReader -> 3));
+			clients.put(inverterHost, new SmaModbusClient(inverterHost, properties.getInverterPort(), registerReader -> 3));
 		}
 	}
 

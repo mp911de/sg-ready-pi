@@ -154,7 +154,7 @@ public class SgReadyControlLoop {
 
 		Level level = changed ? Level.INFO : Level.DEBUG;
 		if (log.isEnabledForLevel(level)) {
-			log.atLevel(level).log(String.format("SG-Ready: %s, Ingress %s, PV %s, SoC %s", state, ingress, pv, soc));
+			log.atLevel(level).log(String.format("SG Ready: %s, Ingress %s, PV %s, SoC %s", state, ingress, pv, soc));
 		}
 	}
 

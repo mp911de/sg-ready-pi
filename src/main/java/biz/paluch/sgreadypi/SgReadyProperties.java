@@ -30,7 +30,7 @@ import javax.measure.quantity.Power;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Configuration properties for the SG-Ready control application.
+ * Configuration properties for the SG Ready control application.
  * 
  * @author Mark Paluch
  */
@@ -47,6 +47,8 @@ public class SgReadyProperties {
 	 * Collection of inverter hostnames/IP-adresses.
 	 */
 	List<String> inverterHosts;
+
+	int inverterPort = 502;
 
 	Duration queryInterval = Duration.ofSeconds(10);
 
