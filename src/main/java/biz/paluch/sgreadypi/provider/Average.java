@@ -58,8 +58,12 @@ class Average {
 
 	public double getAverage() {
 
-		DoubleAdder adder = new DoubleAdder();
 		synchronized (dataPoints) {
+			if (dataPoints.isEmpty()) {
+				return 0;
+			}
+
+			DoubleAdder adder = new DoubleAdder();
 			dataPoints.forEach(it -> adder.add(it.value));
 			return adder.doubleValue() / dataPoints.size();
 		}
