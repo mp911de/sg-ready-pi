@@ -24,11 +24,14 @@ import org.springframework.stereotype.Component;
 /**
  * @author Mark Paluch
  */
-@Value
 @Component
 class DebounceHealthIndicator implements HealthIndicator {
 
-    DebounceStateConsumer consumer;
+    private final DebounceStateConsumer consumer;
+
+    public DebounceHealthIndicator(DebounceStateConsumer consumer) {
+        this.consumer = consumer;
+    }
 
     @Override
     public Health health() {

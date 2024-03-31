@@ -16,13 +16,17 @@
 package biz.paluch.sgreadypi.output.gpio;
 
 import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.output.CompositeSgReadyStateConsumer;
 import biz.paluch.sgreadypi.output.ConditionalOnRaspberryPi;
 import biz.paluch.sgreadypi.output.DebounceStateConsumer;
+import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
+import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.*;
@@ -51,8 +55,11 @@ public class GpioConfiguration {
 	 */
 	@Bean
 	@Primary
-	DebounceStateConsumer debounce(Relay relay, TaskScheduler scheduler) {
-		return new DebounceStateConsumer(relay, scheduler, Duration.ofMinutes(1));
+	DebounceStateConsumer debounce(ObjectProvider<SgReadyStateConsumer> stateConsumers, TaskScheduler scheduler) {
+
+		List<SgReadyStateConsumer> list = stateConsumers.stream().toList();
+
+		return new DebounceStateConsumer(new CompositeSgReadyStateConsumer(list), scheduler, Duration.ofMinutes(1));
 	}
 
 	@Configuration(proxyBeanMethods = false)
