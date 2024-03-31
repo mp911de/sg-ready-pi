@@ -16,13 +16,16 @@
 package biz.paluch.sgreadypi.output.gpio;
 
 import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.output.ConditionalOnRaspberryPi;
 import biz.paluch.sgreadypi.output.DebounceStateConsumer;
+import io.micrometer.core.instrument.MeterRegistry;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
+import org.springframework.context.annotation.*;
 import org.springframework.scheduling.TaskScheduler;
 
 import com.pi4j.Pi4J;
@@ -34,15 +37,13 @@ import com.pi4j.context.Context;
  * @author Mark Paluch
  */
 @Configuration(proxyBeanMethods = false)
+@Slf4j
+@Import({ GpioConfiguration.RaspberryPi.class, GpioConfiguration.Fallback.class })
 public class GpioConfiguration {
 
-	@Bean
-	@ConditionalOnProperty("sg.gpio.rpi3-ch.pin-a")
-	PiRelHat3Ch piRelHat3Ch(Context context, SgReadyProperties properties) {
-
-		GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
-
-		return new PiRelHat3Ch(context, rpi3Ch.pinA(), rpi3Ch.pinB());
+	@Bean(destroyMethod = "shutdown")
+	Context context(SgReadyProperties properties) {
+		return Pi4J.newAutoContextAllowMocks();
 	}
 
 	/**
@@ -50,13 +51,56 @@ public class GpioConfiguration {
 	 */
 	@Bean
 	@Primary
-	DebounceStateConsumer debounce(PiRelHat3Ch relay, TaskScheduler scheduler) {
+	DebounceStateConsumer debounce(Relay relay, TaskScheduler scheduler) {
 		return new DebounceStateConsumer(relay, scheduler, Duration.ofMinutes(1));
 	}
 
-	@Bean(destroyMethod = "shutdown")
-	Context context() {
-		return Pi4J.newAutoContextAllowMocks();
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnRaspberryPi
+	static class RaspberryPi {
+
+		@Bean
+		@ConditionalOnProperty("sg.gpio.rpi3-ch.pin-a")
+		PiRelHat3Ch piRelHat3Ch(MeterRegistry meterRegistry, Context context, SgReadyProperties properties) {
+
+			GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
+
+			return new PiRelHat3Ch(meterRegistry, context, rpi3Ch.pinA(), rpi3Ch.pinB());
+		}
+
+		@Bean
+		RelayHealthIndicator relayHealthIndicator(PiRelHat3Ch relay) {
+			return new RelayHealthIndicator(relay);
+		}
+
+		@Bean
+		RelayController relayController(PiRelHat3Ch piRelHat3Ch) {
+			return new RelayController(piRelHat3Ch);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@Conditional(NotOnRaspberryPi.class)
+	static class Fallback {
+
+		@Bean
+		Relay dummyRelay() {
+			return state -> log.info("Mock Relay: %s".formatted(state));
+		}
+
+	}
+
+	static class NotOnRaspberryPi extends NoneNestedConditions {
+
+		public NotOnRaspberryPi() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnRaspberryPi
+		static class OnRaspberryPi {
+
+		}
 	}
 
 }

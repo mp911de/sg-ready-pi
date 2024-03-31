@@ -17,7 +17,11 @@ package biz.paluch.sgreadypi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -29,7 +33,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class SgReadyApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SgReadyApplication.class, args);
+
+		SpringApplication application = new SpringApplication(SgReadyApplication.class);
+
+		if (System.getProperties().containsKey("PIDFILE")) {
+			application.addListeners(new ApplicationPidFileWriter());
+		}
+
+		application.run(args);
 	}
 
 }

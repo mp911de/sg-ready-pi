@@ -15,6 +15,7 @@
  */
 package biz.paluch.sgreadypi.output.gpio;
 
+import biz.paluch.sgreadypi.output.ConditionalOnRaspberryPi;
 import lombok.Value;
 
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import com.pi4j.io.gpio.digital.DigitalState;
  * @author Mark Paluch
  */
 @RestController
+@ConditionalOnRaspberryPi
 @RequestMapping("relay")
 @Value
 class RelayController {

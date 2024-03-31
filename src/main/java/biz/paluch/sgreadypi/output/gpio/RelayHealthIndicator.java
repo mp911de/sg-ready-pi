@@ -26,7 +26,6 @@ import com.pi4j.io.gpio.digital.DigitalState;
 /**
  * @author Mark Paluch
  */
-@Component
 @Value
 class RelayHealthIndicator implements HealthIndicator {
 

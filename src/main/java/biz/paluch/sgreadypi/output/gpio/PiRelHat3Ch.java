@@ -17,9 +17,17 @@ package biz.paluch.sgreadypi.output.gpio;
 
 import biz.paluch.sgreadypi.SgReadyState;
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import com.pi4j.context.Context;
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.gpio.digital.DigitalState;
@@ -31,7 +39,7 @@ import com.pi4j.library.pigpio.PiGpioException;
  * @author Mark Paluch
  * @link <a href="https://www.waveshare.com/wiki/RPi_Relay_Board">3Ch RPi Relay Board</a>
  */
-public class PiRelHat3Ch implements SgReadyStateConsumer {
+public class PiRelHat3Ch implements Relay {
 
 	private final DigitalOutput ch1;
 
@@ -39,12 +47,17 @@ public class PiRelHat3Ch implements SgReadyStateConsumer {
 
 	private final DigitalOutput ch3 = null; // unused;
 	private final Context context;
+	private final MeterRegistry meterRegistry;
 
-	public PiRelHat3Ch(Context context) {
-		this(context, PIN.D26.getPin(), PIN.D20.getPin());
-	}
+	private final Map<SgReadyState, Timer> timing = new ConcurrentHashMap<>();
 
-	public PiRelHat3Ch(Context context, int ch1, int ch2) {
+	private volatile SgReadyState state = SgReadyState.NORMAL;
+
+	private volatile Instant lastUpdate = Instant.now();
+
+	public PiRelHat3Ch(MeterRegistry meterRegistry, Context context, int ch1, int ch2) {
+
+		this.meterRegistry = meterRegistry;
 
 		var ch1Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch1).name("CH1").address(ch1)
 				.shutdown(DigitalState.HIGH).build();
@@ -72,6 +85,14 @@ public class PiRelHat3Ch implements SgReadyStateConsumer {
 	@Override
 	public void onState(SgReadyState state) {
 
+		Instant now = Instant.now();
+		Timer timer = timing.computeIfAbsent(this.state, sgReadyState -> meterRegistry.timer("piRelHat3Ch",
+				Collections.singleton(Tag.of("state", sgReadyState.name()))));
+
+		timer.record(Duration.between(lastUpdate, now));
+
+		this.lastUpdate = now;
+		this.state = state;
 		this.ch1.state(getState(state.a()));
 		this.ch2.state(getState(state.b()));
 	}

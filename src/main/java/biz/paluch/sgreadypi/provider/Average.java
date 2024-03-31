@@ -19,7 +19,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedList;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Utility to calculate a moving average for a {@link Duration time window} of data points.
@@ -56,12 +58,11 @@ class Average {
 
 	public double getAverage() {
 
-		Mean mean = new Mean();
+		DoubleAdder adder = new DoubleAdder();
 		synchronized (dataPoints) {
-			dataPoints.forEach(it -> mean.increment(it.value));
+			dataPoints.forEach(it -> adder.add(it.value));
+			return adder.doubleValue() / dataPoints.size();
 		}
-
-		return mean.getResult();
 	}
 
 	record DataPoint(Instant time, double value) {
