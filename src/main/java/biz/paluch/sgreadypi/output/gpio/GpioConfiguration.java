@@ -55,11 +55,11 @@ public class GpioConfiguration {
 	 */
 	@Bean
 	@Primary
-	DebounceStateConsumer debounce(ObjectProvider<SgReadyStateConsumer> stateConsumers, TaskScheduler scheduler) {
+	DebounceStateConsumer debounce(ObjectProvider<SgReadyStateConsumer> stateConsumers, TaskScheduler scheduler, SgReadyProperties properties) {
 
 		List<SgReadyStateConsumer> list = stateConsumers.stream().toList();
 
-		return new DebounceStateConsumer(new CompositeSgReadyStateConsumer(list), scheduler, Duration.ofMinutes(1));
+		return new DebounceStateConsumer(new CompositeSgReadyStateConsumer(list), scheduler, properties.getDebounce());
 	}
 
 	@Configuration(proxyBeanMethods = false)

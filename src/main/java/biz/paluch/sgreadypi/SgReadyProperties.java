@@ -52,7 +52,7 @@ public class SgReadyProperties {
 
 	Duration queryInterval = Duration.ofSeconds(10);
 
-	Duration averaging = Duration.ofSeconds(60);
+	Duration averaging = Duration.ofSeconds(300);
 
 	/**
 	 * Power consumption of the heat pump in Watt.
@@ -69,6 +69,8 @@ public class SgReadyProperties {
 			Quantities.getQuantity(60, Units.PERCENT));
 
 	GpioProperties gpio;
+
+	Duration debounce = Duration.ofMinutes(5);
 
 	/**
 	 * @param pvAvailable Battery state of Charge indicating unused PV energy. Used to recommend heat pump temperature
