@@ -100,7 +100,7 @@ class SgReadyControlLoopUnitTests {
 	}
 
 	@Test
-	void shouldDowngrateToAvailablePowerFromExcess() {
+	void shouldDowngradeToAvailablePowerFromExcess() {
 
 		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
@@ -111,6 +111,20 @@ class SgReadyControlLoopUnitTests {
 
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(50, Units.PERCENT));
 		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
+	}
+
+	@Test
+	void shouldDowngradeToNormalOnLowerPowerGeneration() {
+
+		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
+		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
+
+		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(10, Units.WATT));
+		assertThat(controller.createState()).isEqualTo(SgReadyState.NORMAL);
 	}
 
 	@Test

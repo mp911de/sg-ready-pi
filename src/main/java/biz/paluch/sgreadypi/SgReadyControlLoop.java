@@ -112,9 +112,10 @@ public class SgReadyControlLoop {
 			} else if (gte(soc, properties.getBattery().pvAvailable())) {
 				return SgReadyState.AVAILABLE_PV;
 			}
+			return this.state;
 		}
 
-		return this.state;
+		return SgReadyState.NORMAL;
 	}
 
 	/**
