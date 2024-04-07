@@ -42,6 +42,8 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
+ * {@link PowerGeneratorService} implementation based on Modbus communication supporting Sunny Tripower inverters.
+ * 
  * @author Mark Paluch
  */
 @Slf4j
