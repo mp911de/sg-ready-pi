@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,6 +51,8 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	private final Map<String, SmaModbusClient> clients = new LinkedHashMap<>();
 	private final Map<String, InverterState> stateMap = new ConcurrentHashMap<>();
+
+	private final Map<String, MutableStatistics<Power>> stats = new LinkedHashMap<>();
 
 	private final SgReadyProperties properties;
 	private final TaskScheduler executorService;
@@ -100,6 +103,12 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 					log.debug("Inverter at {} state {}", host, state);
 
 					stateMap.put(host, state);
+
+					MutableStatistics<Power> statistics = stats.computeIfAbsent(host,
+							it -> MutableStatistics.create(properties.getAveraging(), Units.WATT));
+
+					statistics.update(InverterState.getSolarPower(state));
+
 				}));
 	}
 
@@ -140,11 +149,20 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 	}
 
 	@Override
-	public Quantity<Power> getGeneratorPower() {
-		return Quantities.getQuantity(
-				stateMap.values().stream()
-						.mapToInt(it -> it.currentActivePower() + it.batteryCharging() - it.batteryDischarging()).sum(),
-				Units.WATT);
+	public Statistics<Power> getGeneratorPower() {
+		return new Statistics<>() {
+			@Override
+			public Quantity<Power> getAverage() {
+				return Quantities.getQuantity(
+						stats.values().stream().mapToInt(it -> it.getAverage().getValue().intValue()).sum(), Units.WATT);
+			}
+
+			@Override
+			public Quantity<Power> getMostRecent() {
+				return Quantities.getQuantity(
+						stats.values().stream().mapToInt(it -> it.getMostRecent().getValue().intValue()).sum(), Units.WATT);
+			}
+		};
 	}
 
 	public Map<String, InverterState> getStateMap() {
@@ -158,6 +176,10 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	public record InverterState(int currentActivePower, boolean hasBattery, int batteryCharging, int batteryDischarging,
 			int stateOfCharge, Instant timestamp) {
+		public static Quantity<Power> getSolarPower(InverterState state) {
+			return Quantities.getQuantity(
+					state.currentActivePower() + state.batteryCharging() - Math.abs(state.batteryDischarging()), Units.WATT);
+		}
 	}
 
 }

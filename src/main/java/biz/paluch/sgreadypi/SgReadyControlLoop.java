@@ -83,9 +83,9 @@ public class SgReadyControlLoop {
 
 	SgReadyState createState() {
 
-		Quantity<Power> generatorPower = inverters.getGeneratorPower();
+		Quantity<Power> generatorPower = inverters.getGeneratorPower().getAverage();
 		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
-		Quantity<Power> ingress = powerMeter.getIngress();
+		Quantity<Power> ingress = powerMeter.getIngress().getAverage();
 
 		return createState(ingress, generatorPower, soc);
 	}
@@ -134,8 +134,8 @@ public class SgReadyControlLoop {
 	 */
 	private void doWithPower(PowerConsumer consumer) {
 
-		Quantity<Power> generatorPower = inverters.getGeneratorPower();
-		Quantity<Power> ingress = powerMeter.getIngress();
+		Quantity<Power> generatorPower = inverters.getGeneratorPower().getAverage();
+		Quantity<Power> ingress = powerMeter.getIngress().getAverage();
 		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
 
 		consumer.apply(ingress, generatorPower, soc);

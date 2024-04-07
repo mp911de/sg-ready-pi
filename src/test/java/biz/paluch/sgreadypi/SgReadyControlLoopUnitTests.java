@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
+import biz.paluch.sgreadypi.provider.Statistics;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
@@ -58,9 +59,9 @@ class SgReadyControlLoopUnitTests {
 	@Test
 	void shouldLeaveStateNormalOnNoPower() {
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(0, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		assertThat(controller.createState()).isEqualTo(SgReadyState.NORMAL);
 	}
@@ -68,9 +69,9 @@ class SgReadyControlLoopUnitTests {
 	@Test
 	void shouldEnableHeatPumpNormalOnAvailablePower() {
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(100, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(20, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}
@@ -78,9 +79,9 @@ class SgReadyControlLoopUnitTests {
 	@Test
 	void shouldTurnOnHeatPumpOnExcessPower() {
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(100, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		assertThat(controller.createState()).isEqualTo(SgReadyState.EXCESS_PV);
 	}
@@ -88,9 +89,9 @@ class SgReadyControlLoopUnitTests {
 	@Test
 	void shouldRetainHeatPumpForcedOnExcessPower() {
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(100, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
@@ -102,9 +103,9 @@ class SgReadyControlLoopUnitTests {
 	@Test
 	void shouldDowngradeToAvailablePowerFromExcess() {
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(100, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
@@ -116,14 +117,14 @@ class SgReadyControlLoopUnitTests {
 	@Test
 	void shouldDowngradeToNormalOnLowerPowerGeneration() {
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(100, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(80, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(10, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(10, Units.WATT)));
 		assertThat(controller.createState()).isEqualTo(SgReadyState.NORMAL);
 	}
 
@@ -132,9 +133,9 @@ class SgReadyControlLoopUnitTests {
 
 		properties.setHeatPumpPowerConsumption(Quantities.getQuantity(100, Units.WATT));
 
-		when(inverters.getGeneratorPower()).thenReturn(Quantities.getQuantity(100, Units.WATT));
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.ofValue(Quantities.getQuantity(100, Units.WATT)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Quantities.getQuantity(60, Units.PERCENT));
-		when(powerMeter.getIngress()).thenReturn(Quantities.getQuantity(0, Units.WATT));
+		when(powerMeter.getIngress()).thenReturn(Statistics.ofValue(Quantities.getQuantity(0, Units.WATT)));
 
 		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}

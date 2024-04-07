@@ -74,8 +74,8 @@ public class TelegramService implements SgReadyStateConsumer {
 	@Override
 	public void onState(SgReadyState state) {
 
-		Quantity<Power> generatorPower = inverters.getGeneratorPower();
-		Quantity<Power> ingress = powerMeter.getIngress();
+		Quantity<Power> generatorPower = inverters.getGeneratorPower().getAverage();
+		Quantity<Power> ingress = powerMeter.getIngress().getAverage();
 		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
 
 		String stateName = resourceBundle.getString("state." + state.name());

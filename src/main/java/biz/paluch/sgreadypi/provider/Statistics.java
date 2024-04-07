@@ -13,32 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi;
+package biz.paluch.sgreadypi.provider;
 
-import biz.paluch.sgreadypi.provider.Statistics;
-
-import javax.measure.quantity.Power;
+import javax.measure.Quantity;
 
 /**
- * Power meter interface providing power ingress from an external power grid.
- *
+ * Interface providing access to value statistics and the most recent one.
+ * 
  * @author Mark Paluch
  */
-public interface PowerMeter {
+public interface Statistics<Q extends Quantity<Q>> {
+
+	static <Q extends Quantity<Q>> Statistics<Q> ofValue(Quantity<Q> q) {
+		return new Statistics<Q>() {
+			@Override
+			public Quantity<Q> getAverage() {
+				return q;
+			}
+
+			@Override
+			public Quantity<Q> getMostRecent() {
+				return q;
+			}
+		};
+	}
 
 	/**
-	 * @return power ingress from an external power grid.
+	 * @return the average value.
 	 */
-	Statistics<Power> getIngress();
+	Quantity<Q> getAverage();
 
 	/**
-	 * @return power egress to an external power grid.
+	 * @return the most recent value.
 	 */
-	Statistics<Power> getEgress();
-
-	/**
-	 * @return {@code true} if the service is alive and has recent data.
-	 */
-	boolean hasData();
-
+	Quantity<Q> getMostRecent();
 }

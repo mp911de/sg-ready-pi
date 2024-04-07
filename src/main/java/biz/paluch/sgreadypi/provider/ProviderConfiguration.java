@@ -33,7 +33,7 @@ public class ProviderConfiguration {
 	@Bean
 	@ConditionalOnProperty("sg.power-meter-id")
 	SunnyHomeManagerService sunnyHomeManagerService(SgReadyProperties properties) {
-		return new SunnyHomeManagerService(properties.getPowerMeterId());
+		return new SunnyHomeManagerService(properties.getPowerMeterId(), properties.getAveraging());
 	}
 
 	@Bean

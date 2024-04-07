@@ -13,32 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi;
+package biz.paluch.sgreadypi.provider;
 
-import biz.paluch.sgreadypi.provider.Statistics;
-
-import javax.measure.quantity.Power;
+import javax.measure.Quantity;
+import javax.measure.Unit;
+import java.time.Duration;
 
 /**
- * Power meter interface providing power ingress from an external power grid.
- *
+ * Allows mutation of the {@link Statistics}.
+ * 
  * @author Mark Paluch
  */
-public interface PowerMeter {
+public interface MutableStatistics<Q extends Quantity<Q>> extends Statistics<Q> {
 
 	/**
-	 * @return power ingress from an external power grid.
+	 * Create a new {@link MutableStatistics}.
+	 * 
+	 * @param duration
+	 * @param unit
+	 * @return
+	 * @param <Q>
 	 */
-	Statistics<Power> getIngress();
+	static <Q extends Quantity<Q>> MutableStatistics<Q> create(Duration duration, Unit<Q> unit) {
+		return new DefaultStatistics<>(duration, unit);
+	}
 
 	/**
-	 * @return power egress to an external power grid.
+	 * Provide a new {@code value} to the average.
+	 * 
+	 * @param value
 	 */
-	Statistics<Power> getEgress();
-
-	/**
-	 * @return {@code true} if the service is alive and has recent data.
-	 */
-	boolean hasData();
-
+	void update(Quantity<Q> value);
 }

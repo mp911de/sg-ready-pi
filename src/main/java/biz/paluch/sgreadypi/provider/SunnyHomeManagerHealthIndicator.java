@@ -53,18 +53,14 @@ class SunnyHomeManagerHealthIndicator implements HealthIndicator {
 			builder.down().withDetail("power-meter-down-reason", "Reading timeout");
 		}
 
-		Quantity<Power> ingress = service.getIngress();
-		Quantity<Power> momentaryIngress = service.getMomentaryIngress();
+		Statistics<Power> ingress = service.getIngress();
+		Statistics<Power> egress = service.getEgress();
 
-		Quantity<Power> egress = service.getEgress();
-		Quantity<Power> momentaryEgress = service.getMomentaryEgress();
-
-		Map<String, Object> powerMeter = new LinkedHashMap<>();
 		builder.withDetail("last-update", powerMeterReading);
-		builder.withDetail("ingress", ingress.toString());
-		builder.withDetail("ingress-momentary", momentaryIngress.toString());
-		builder.withDetail("egress", egress.toString());
-		builder.withDetail("egress-momentary", momentaryEgress.toString());
+		builder.withDetail("ingress", ingress.getAverage().toString());
+		builder.withDetail("ingress-momentary", ingress.getMostRecent().toString());
+		builder.withDetail("egress", egress.getAverage().toString());
+		builder.withDetail("egress-momentary", egress.getMostRecent().toString());
 	}
 
 }

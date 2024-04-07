@@ -51,36 +51,25 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 	private Speedwire speedwire;
 	private final long powerMeterId;
 
-	private volatile int ingress;
-	private volatile int egress;
-
-	private final Average averagesIn = new Average(Duration.ofMinutes(1));
-	private final Average averagesOut = new Average(Duration.ofMinutes(1));
+	private MutableStatistics<Power> ingress;
+	private MutableStatistics<Power> egress;
 
 	@Getter protected volatile Instant reading = Instant.MIN;
 
-	public SunnyHomeManagerService(long powerMeterId) {
+	public SunnyHomeManagerService(long powerMeterId, Duration averaging) {
 		this.powerMeterId = powerMeterId;
+		this.ingress = MutableStatistics.create(averaging, Units.WATT);
+		this.egress = MutableStatistics.create(averaging, Units.WATT);
 	}
 
 	@Override
-	public Quantity<Power> getIngress() {
-		return Quantities.getQuantity(Math.round(averagesIn.getAverage()), Units.WATT);
+	public Statistics<Power> getIngress() {
+		return ingress;
 	}
 
 	@Override
-	public Quantity<Power> getMomentaryIngress() {
-		return Quantities.getQuantity(ingress, Units.WATT);
-	}
-
-	@Override
-	public Quantity<Power> getEgress() {
-		return Quantities.getQuantity(Math.round(averagesOut.getAverage()), Units.WATT);
-	}
-
-	@Override
-	public Quantity<Power> getMomentaryEgress() {
-		return Quantities.getQuantity(egress, Units.WATT);
+	public Statistics<Power> getEgress() {
+		return egress;
 	}
 
 	@Override
@@ -107,12 +96,10 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 					if (powerMeterId == this.powerMeterId) {
 
 						Quantity<Power> in = em.getData(EnergyMeterChannels.TOTAL_P_IN).to(Units.WATT);
-						ingress = in.getValue().intValue();
-						averagesIn.add(ingress);
+						ingress.update(in);
 
 						Quantity<Power> out = em.getData(EnergyMeterChannels.TOTAL_P_OUT).to(Units.WATT);
-						egress = out.getValue().intValue();
-						averagesOut.add(egress);
+						egress.update(out);
 						reading = Instant.now();
 					}
 				}

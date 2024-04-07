@@ -17,6 +17,7 @@ package biz.paluch.sgreadypi.provider;
 
 import lombok.Value;
 
+import javax.measure.quantity.Power;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -57,7 +58,9 @@ class SmaPowerGeneratorHealthIndicator implements HealthIndicator {
 			builder.down().withDetail("inverter-down-reason", "No readings");
 		}
 
-		builder.withDetail("generator-power", powerGenerator.getGeneratorPower().toString());
+		Statistics<Power> generatorPower = powerGenerator.getGeneratorPower();
+		builder.withDetail("generator-power", generatorPower.getAverage().toString());
+		builder.withDetail("generator-power-momentary", generatorPower.getMostRecent().toString());
 		builder.withDetail("battery-soc", powerGenerator.getBatteryStateOfCharge().toString());
 
 		stateMap.forEach((inverter, inverterState) -> {

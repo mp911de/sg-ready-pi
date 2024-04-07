@@ -15,6 +15,7 @@
  */
 package biz.paluch.sgreadypi;
 
+import biz.paluch.sgreadypi.provider.Statistics;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
@@ -39,8 +40,8 @@ public interface PowerGeneratorService {
 	/**
 	 * @return available generator power in {@link tech.units.indriya.unit.Units#WATT}.
 	 */
-	default Quantity<Power> getGeneratorPower() {
-		return Quantities.getQuantity(0, Units.WATT);
+	default Statistics<Power> getGeneratorPower() {
+		return Statistics.ofValue(Quantities.getQuantity(0, Units.WATT));
 	}
 
 	/**
