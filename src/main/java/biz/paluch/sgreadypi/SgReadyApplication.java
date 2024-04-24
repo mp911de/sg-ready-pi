@@ -15,13 +15,16 @@
  */
 package biz.paluch.sgreadypi;
 
+import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
+import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
+
+import java.time.Clock;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -41,6 +44,12 @@ public class SgReadyApplication {
 		}
 
 		application.run(args);
+	}
+
+	@Bean
+	public SgReadyControlLoop controlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
+			SgReadyStateConsumer stateConsumer, SgReadyProperties properties) {
+		return new SgReadyControlLoop(inverters, powerMeter, stateConsumer, properties, Clock.systemDefaultZone());
 	}
 
 }

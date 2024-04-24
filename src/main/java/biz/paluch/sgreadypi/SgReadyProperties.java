@@ -21,6 +21,7 @@ import biz.paluch.sgreadypi.output.gpio.GpioProperties;
 import lombok.Data;
 
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.List;
 
 import javax.measure.Quantity;
@@ -28,6 +29,7 @@ import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.lang.Nullable;
 
 /**
  * Configuration properties for the SG Ready control application.
@@ -64,6 +66,8 @@ public class SgReadyProperties {
 	 * spikes.
 	 */
 	Quantity<Power> ingressLimit = Watt.of(200);
+
+	@Nullable LocalTime excessNotBefore;
 
 	Levels battery = new Levels(Percent.of(20), Percent.of(80), Percent.of(60));
 

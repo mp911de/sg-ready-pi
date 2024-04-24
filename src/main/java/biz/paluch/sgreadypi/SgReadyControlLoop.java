@@ -20,6 +20,9 @@ import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
 import javax.measure.Quantity;
@@ -28,8 +31,8 @@ import javax.measure.quantity.Power;
 
 import org.slf4j.event.Level;
 
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
 /**
  * Controller to determine the SG ready state. State is determined by power availability using
@@ -39,7 +42,6 @@ import org.springframework.stereotype.Component;
  * @author Mark Paluch
  */
 @Slf4j
-@Component
 public class SgReadyControlLoop {
 
 	private final PowerGeneratorService inverters;
@@ -47,16 +49,21 @@ public class SgReadyControlLoop {
 	private final SunnyHomeManagerService powerMeter;
 
 	private final SgReadyStateConsumer stateConsumer;
+
 	private final SgReadyProperties properties;
 
+	private final Clock clock;
+
 	@Getter private volatile SgReadyState state = SgReadyState.NORMAL;
+	@Getter private volatile Decision decision;
 
 	public SgReadyControlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
-			SgReadyStateConsumer stateConsumer, SgReadyProperties properties) {
+			SgReadyStateConsumer stateConsumer, SgReadyProperties properties, Clock clock) {
 		this.inverters = inverters;
 		this.powerMeter = powerMeter;
 		this.stateConsumer = stateConsumer;
 		this.properties = properties;
+		this.clock = clock;
 	}
 
 	/**
@@ -71,10 +78,11 @@ public class SgReadyControlLoop {
 				log.warn("Skipping control loop iteration. No data available.");
 				return;
 			}
-			SgReadyState state = createState(this.state, ingress, generatorPower, soc);
-			boolean changed = this.state != state;
+			Decision decision = createState(this.state, ingress, generatorPower, soc);
+			boolean changed = this.state != decision.state();
 
-			this.state = state;
+			this.state = decision.state();
+			this.decision = decision;
 
 			logState(this.state, ingress, generatorPower, soc, changed);
 			stateConsumer.onState(state);
@@ -82,6 +90,10 @@ public class SgReadyControlLoop {
 	}
 
 	SgReadyState createState() {
+		return decide().state();
+	}
+
+	Decision decide() {
 
 		Quantity<Power> generatorPower = inverters.getGeneratorPower().getAverage();
 		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
@@ -90,32 +102,74 @@ public class SgReadyControlLoop {
 		return createState(this.state, ingress, generatorPower, soc);
 	}
 
-	private SgReadyState createState(SgReadyState currentState, Quantity<Power> ingress, Quantity<Power> generatorPower,
+	private Decision createState(SgReadyState currentState, Quantity<Power> ingress, Quantity<Power> generatorPower,
 			Quantity<Dimensionless> soc) {
 
 		if (gte(ingress, properties.getIngressLimit())) {
 			// apply state
-			return SgReadyState.NORMAL;
+			return new Decision(SgReadyState.NORMAL,
+					ConditionOutcome.match("Ingress %s exceeds limit %s".formatted(ingress, properties.getIngressLimit())));
 		}
 
 		if (gte(generatorPower, properties.getHeatPumpPowerConsumption())) {
 
-			if (gte(soc, properties.getBattery().pvExcessOff())) {
+			ConditionOutcome match = ConditionOutcome.match("Generator power %s above heat pump consumption %s"
+					.formatted(generatorPower, properties.getHeatPumpPowerConsumption()));
 
-				if (gte(soc, properties.getBattery().pvExcessOn())) {
-					return SgReadyState.EXCESS_PV;
+			SgReadyProperties.Levels battery = properties.getBattery();
+			ConditionOutcome qualifiesForExcessPower = match
+					.nested(qualifiesForExcessPower(battery, properties.getExcessNotBefore(), soc));
+
+			if (qualifiesForExcessPower.isMatch()) {
+
+				if (gte(soc, battery.pvExcessOn())) {
+					return new Decision(SgReadyState.EXCESS_PV, qualifiesForExcessPower.nestedMatch(
+							"Battery SoC %s above SoC for excess PV start threshold %s %%".formatted(soc, battery.pvExcessOn())));
 				}
 
 				if (currentState == SgReadyState.NORMAL) {
-					return SgReadyState.AVAILABLE_PV;
+					return new Decision(SgReadyState.AVAILABLE_PV,
+							qualifiesForExcessPower.nestedNoMatch(
+									"Battery SoC %s below SoC for excess PV start threshold %s %%, switching from normal to available"
+											.formatted(soc, battery.pvExcessOn())));
 				}
-			} else if (gte(soc, properties.getBattery().pvAvailable())) {
-				return SgReadyState.AVAILABLE_PV;
+
+				return new Decision(currentState, qualifiesForExcessPower.nestedNoMatch("Retaining state"));
+			} else if (gte(soc, battery.pvAvailable())) {
+				return new Decision(SgReadyState.AVAILABLE_PV, qualifiesForExcessPower
+						.nestedMatch("Battery SoC %s of charge above required SoC %s %%".formatted(soc, battery.pvAvailable())));
 			}
-			return currentState;
+
+			return new Decision(currentState, match.nestedNoMatch("Retaining current state"));
 		}
 
-		return SgReadyState.NORMAL;
+		return new Decision(SgReadyState.NORMAL, ConditionOutcome.noMatch("Generator power below heat pump consumption"));
+	}
+
+	private ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
+			@Nullable LocalTime excessNotBefore, Quantity<Dimensionless> soc) {
+
+		ConditionOutcome outcome = null;
+		if (excessNotBefore != null) {
+
+			LocalDateTime now = LocalDateTime.now(clock);
+
+			if (now.toLocalTime().isBefore(excessNotBefore)) {
+				return ConditionOutcome
+						.noMatch("Current time %s before excess power is allowed %s".formatted(now.toLocalTime(), excessNotBefore));
+			} else {
+				outcome = ConditionOutcome
+						.match("Current time %s after excess power is allowed %s".formatted(now.toLocalTime(), excessNotBefore));
+			}
+		}
+
+		ConditionOutcome socBelowPvExcessOff = gte(soc, battery.pvExcessOff())
+				? ConditionOutcome
+						.match("Battery SoC %s above SoC for excess PV stop threshold %s %%".formatted(soc, battery.pvExcessOff()))
+				: ConditionOutcome.noMatch(
+						"Battery SoC %s below SoC for excess PV stop threshold %s %%".formatted(soc, battery.pvExcessOff()));
+
+		return outcome == null ? socBelowPvExcessOff : outcome.nested(socBelowPvExcessOff);
 	}
 
 	/**
@@ -168,6 +222,105 @@ public class SgReadyControlLoop {
 	interface PowerConsumer {
 
 		void apply(Quantity<Power> ingress, Quantity<Power> generatorPower, Quantity<Dimensionless> soc);
+	}
+
+	/**
+	 * Outcome for a condition match, including log message.
+	 */
+	static class ConditionOutcome {
+
+		private final @Nullable ConditionOutcome parent;
+
+		private final boolean match;
+
+		private final String message;
+
+		private ConditionOutcome(@Nullable ConditionOutcome parent, boolean match, String message) {
+			this.parent = parent;
+			this.match = match;
+			this.message = message;
+		}
+
+		/**
+		 * Create a {@link ConditionOutcome} for a matching condition including a {@code message}.
+		 *
+		 * @param message
+		 * @return
+		 */
+		public static ConditionOutcome match(String message) {
+			return new ConditionOutcome(null, true, message);
+		}
+
+		/**
+		 * Create a {@link ConditionOutcome} for a not matching condition including a {@code message}.
+		 *
+		 * @param message
+		 * @return
+		 */
+		public static ConditionOutcome noMatch(String message) {
+			return new ConditionOutcome(null, false, message);
+		}
+
+		/**
+		 * Create a nested {@link ConditionOutcome} for a matching condition including a {@code message}.
+		 *
+		 * @param message
+		 * @return
+		 */
+		public ConditionOutcome nestedMatch(String message) {
+			return new ConditionOutcome(this, true, message);
+		}
+
+		/**
+		 * Create a nested {@link ConditionOutcome} for a not matching condition including a {@code message}.
+		 *
+		 * @param message
+		 * @return
+		 */
+		public ConditionOutcome nestedNoMatch(String message) {
+			return new ConditionOutcome(this, false, message);
+		}
+
+		/**
+		 * Create a nested {@link ConditionOutcome} for a nested {@link ConditionOutcome}.
+		 *
+		 * @param message
+		 * @return
+		 */
+		public ConditionOutcome nested(ConditionOutcome nested) {
+			return new ConditionOutcome(this, nested.isMatch(), nested.message);
+		}
+
+		@Nullable
+		public ConditionOutcome getParent() {
+			return parent;
+		}
+
+		public boolean isMatch() {
+			return match;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		@Override
+		public String toString() {
+
+			StringBuilder builder = new StringBuilder();
+
+			if (parent != null) {
+				builder.append(parent).append(" -> ");
+			}
+
+			builder.append(isMatch() ? "Match" : "No match").append(": ").append(getMessage());
+
+			return builder.toString();
+		}
+	}
+
+	record Decision(SgReadyState state, ConditionOutcome conditionOutcome) {
+
 	}
 
 }

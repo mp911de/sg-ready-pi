@@ -15,6 +15,12 @@
  */
 package biz.paluch.sgreadypi;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -53,7 +59,8 @@ class SgReadyControlLoopUnitTests {
 
 		properties.setHeatPumpPowerConsumption(Watt.of(100));
 
-		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties);
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties,
+				Clock.systemDefaultZone());
 		when(inverters.hasData()).thenReturn(true);
 		when(powerMeter.hasData()).thenReturn(true);
 	}
@@ -114,6 +121,39 @@ class SgReadyControlLoopUnitTests {
 
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(50));
 		assertThat(controller.createState()).isEqualTo(SgReadyState.AVAILABLE_PV);
+	}
+
+	@Test
+	void shouldLimitExcessToTime() {
+
+		LocalDateTime ldt = LocalDateTime.parse("2007-12-03T10:15:30");
+
+		Clock fixed = Clock.fixed(ldt.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, fixed);
+
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));
+		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(80));
+		when(powerMeter.getIngress()).thenReturn(Statistics.just(Watt.zero()));
+
+		properties.setExcessNotBefore(LocalTime.of(14, 00));
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.AVAILABLE_PV);
+
+		properties.setExcessNotBefore(LocalTime.of(10, 00));
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
+
+		properties.setExcessNotBefore(LocalTime.of(14, 00));
+
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.AVAILABLE_PV);
+
+		properties.setExcessNotBefore(null);
+
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
+
 	}
 
 	@Test
