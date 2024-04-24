@@ -45,11 +45,18 @@ import com.pi4j.context.Context;
  */
 @Configuration(proxyBeanMethods = false)
 @Slf4j
-@Import({ GpioConfiguration.RaspberryPi.class, GpioConfiguration.Fallback.class })
+@Import({ GpioConfiguration.RaspberryPi.class })
 public class GpioConfiguration {
 
+	@ConditionalOnRaspberryPi
 	@Bean(destroyMethod = "shutdown")
 	Context context(SgReadyProperties properties) {
+		return Pi4J.newContext();
+	}
+
+	@Conditional(NotOnRaspberryPi.class)
+	@Bean(destroyMethod = "shutdown")
+	Context mockContext(SgReadyProperties properties) {
 		return Pi4J.newAutoContextAllowMocks();
 	}
 
@@ -67,7 +74,6 @@ public class GpioConfiguration {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnRaspberryPi
 	static class RaspberryPi {
 
 		@Bean
@@ -87,17 +93,6 @@ public class GpioConfiguration {
 		@Bean
 		RelayController relayController(PiRelHat3Ch piRelHat3Ch) {
 			return new RelayController(piRelHat3Ch);
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	@Conditional(NotOnRaspberryPi.class)
-	static class Fallback {
-
-		@Bean
-		Relay dummyRelay() {
-			return state -> log.info("Mock Relay: %s".formatted(state));
 		}
 
 	}

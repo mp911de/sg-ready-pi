@@ -15,24 +15,44 @@
  */
 package biz.paluch.sgreadypi.output.gpio;
 
-import biz.paluch.sgreadypi.output.ConditionalOnRaspberryPi;
 import lombok.Value;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
 import com.pi4j.io.gpio.digital.DigitalState;
 
 /**
  * @author Mark Paluch
  */
 @RestController
-@ConditionalOnRaspberryPi
 @RequestMapping("api/relay")
 @Value
 class RelayController {
 
 	PiRelHat3Ch relay;
+
+	@GetMapping()
+	public Map<String, String> getState() {
+
+		Map<String, String> states = new LinkedHashMap<>();
+
+		for (int i = 0; i < 3; i++) {
+			int channel = i + 1;
+			states.put("" + channel, getState(channel));
+		}
+
+		return states;
+	}
 
 	@GetMapping("{channel}")
 	public String getState(@PathVariable("channel") int channel) {

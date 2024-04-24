@@ -32,3 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 /application.properties
+
+node_modules
+node

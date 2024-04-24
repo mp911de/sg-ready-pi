@@ -131,9 +131,10 @@ class SgReadyControlLoopUnitTests {
 	}
 
 	@Test
-	void shouldEnableHeatPumpHeatPumpBelowExcessPower() {
+	void shouldEnableHeatPumpHeatBelowExcessPower() {
 
 		properties.setHeatPumpPowerConsumption(Watt.of(100));
+		properties.setBattery(new SgReadyProperties.Levels(Percent.of(10), Percent.of(80), Percent.of(70)));
 
 		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(10));
