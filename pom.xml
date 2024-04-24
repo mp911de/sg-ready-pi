@@ -110,7 +110,6 @@
 	</dependencies>
 
 	<build>
-
 		<resources>
 			<resource>
 				<directory>target/dist</directory>

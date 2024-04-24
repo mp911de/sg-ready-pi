@@ -51,7 +51,7 @@ public class GpioConfiguration {
 	@ConditionalOnRaspberryPi
 	@Bean(destroyMethod = "shutdown")
 	Context context(SgReadyProperties properties) {
-		return Pi4J.newContext();
+		return Pi4J.newAutoContext();
 	}
 
 	@Conditional(NotOnRaspberryPi.class)
