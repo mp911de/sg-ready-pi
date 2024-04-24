@@ -71,7 +71,7 @@ public class SgReadyControlLoop {
 				log.warn("Skipping control loop iteration. No data available.");
 				return;
 			}
-			SgReadyState state = createState(ingress, generatorPower, soc);
+			SgReadyState state = createState(this.state, ingress, generatorPower, soc);
 			boolean changed = this.state != state;
 
 			this.state = state;
@@ -87,10 +87,10 @@ public class SgReadyControlLoop {
 		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
 		Quantity<Power> ingress = powerMeter.getIngress().getAverage();
 
-		return createState(ingress, generatorPower, soc);
+		return createState(this.state, ingress, generatorPower, soc);
 	}
 
-	private SgReadyState createState(Quantity<Power> ingress, Quantity<Power> generatorPower,
+	private SgReadyState createState(SgReadyState currentState, Quantity<Power> ingress, Quantity<Power> generatorPower,
 			Quantity<Dimensionless> soc) {
 
 		if (gte(ingress, properties.getIngressLimit())) {
@@ -106,25 +106,16 @@ public class SgReadyControlLoop {
 					return SgReadyState.EXCESS_PV;
 				}
 
-				if (state == SgReadyState.NORMAL) {
+				if (currentState == SgReadyState.NORMAL) {
 					return SgReadyState.AVAILABLE_PV;
 				}
 			} else if (gte(soc, properties.getBattery().pvAvailable())) {
 				return SgReadyState.AVAILABLE_PV;
 			}
-			return this.state;
+			return currentState;
 		}
 
 		return SgReadyState.NORMAL;
-	}
-
-	/**
-	 * Apply SG Ready state.
-	 *
-	 * @param state
-	 */
-	private void applyState(SgReadyState state) {
-		this.state = state;
 	}
 
 	/**

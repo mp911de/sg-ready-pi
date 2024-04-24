@@ -15,17 +15,17 @@
  */
 package biz.paluch.sgreadypi.provider;
 
+import biz.paluch.sgreadypi.measure.Percent;
+import biz.paluch.sgreadypi.PowerGeneratorService;
+import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.measure.Watt;
 import cat.joanpujol.smasolar.modbus.ModbusRegister;
 import cat.joanpujol.smasolar.modbus.SmaModbusClient;
 import cat.joanpujol.smasolar.modbus.SmaModbusRequest;
 import cat.joanpujol.smasolar.modbus.SmaModbusResponse;
-import biz.paluch.sgreadypi.PowerGeneratorService;
-import biz.paluch.sgreadypi.SgReadyProperties;
 import lombok.extern.slf4j.Slf4j;
-import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,7 +43,7 @@ import org.springframework.scheduling.TaskScheduler;
 
 /**
  * {@link PowerGeneratorService} implementation based on Modbus communication supporting Sunny Tripower inverters.
- * 
+ *
  * @author Mark Paluch
  */
 @Slf4j
@@ -145,9 +145,8 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	@Override
 	public Quantity<Dimensionless> getBatteryStateOfCharge() {
-		return Quantities.getQuantity(
-				stateMap.values().stream().filter(InverterState::hasBattery).mapToInt(InverterState::stateOfCharge).sum(),
-				Units.PERCENT);
+		return Percent
+				.of(stateMap.values().stream().filter(InverterState::hasBattery).mapToInt(InverterState::stateOfCharge).sum());
 	}
 
 	@Override
@@ -155,14 +154,12 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 		return new Statistics<>() {
 			@Override
 			public Quantity<Power> getAverage() {
-				return Quantities.getQuantity(
-						stats.values().stream().mapToInt(it -> it.getAverage().getValue().intValue()).sum(), Units.WATT);
+				return Watt.of(stats.values().stream().mapToInt(it -> it.getAverage().getValue().intValue()).sum());
 			}
 
 			@Override
 			public Quantity<Power> getMostRecent() {
-				return Quantities.getQuantity(
-						stats.values().stream().mapToInt(it -> it.getMostRecent().getValue().intValue()).sum(), Units.WATT);
+				return Watt.of(stats.values().stream().mapToInt(it -> it.getMostRecent().getValue().intValue()).sum());
 			}
 		};
 	}
@@ -179,8 +176,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 	public record InverterState(int currentActivePower, boolean hasBattery, int batteryCharging, int batteryDischarging,
 			int stateOfCharge, Instant timestamp) {
 		public static Quantity<Power> getSolarPower(InverterState state) {
-			return Quantities.getQuantity(
-					state.currentActivePower() + state.batteryCharging() - Math.abs(state.batteryDischarging()), Units.WATT);
+			return Watt.of(state.currentActivePower() + state.batteryCharging() - Math.abs(state.batteryDischarging()));
 		}
 	}
 

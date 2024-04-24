@@ -15,10 +15,10 @@
  */
 package biz.paluch.sgreadypi;
 
+import biz.paluch.sgreadypi.measure.Percent;
+import biz.paluch.sgreadypi.measure.Watt;
 import biz.paluch.sgreadypi.output.gpio.GpioProperties;
 import lombok.Data;
-import tech.units.indriya.quantity.Quantities;
-import tech.units.indriya.unit.Units;
 
 import java.time.Duration;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for the SG Ready control application.
- * 
+ *
  * @author Mark Paluch
  */
 @ConfigurationProperties(prefix = "sg")
@@ -63,10 +63,9 @@ public class SgReadyProperties {
 	 * Limit above which the SG Ready state is set to normal operations. Any lower power ingress is considered temporary
 	 * spikes.
 	 */
-	Quantity<Power> ingressLimit = Quantities.getQuantity(200, Units.WATT);
+	Quantity<Power> ingressLimit = Watt.of(200);
 
-	Levels battery = new Levels(Quantities.getQuantity(20, Units.PERCENT), Quantities.getQuantity(80, Units.PERCENT),
-			Quantities.getQuantity(60, Units.PERCENT));
+	Levels battery = new Levels(Percent.of(20), Percent.of(80), Percent.of(60));
 
 	GpioProperties gpio;
 

@@ -19,13 +19,13 @@ import javax.measure.Quantity;
 
 /**
  * Interface providing access to value statistics and the most recent one.
- * 
+ *
  * @author Mark Paluch
  */
 public interface Statistics<Q extends Quantity<Q>> {
 
-	static <Q extends Quantity<Q>> Statistics<Q> ofValue(Quantity<Q> q) {
-		return new Statistics<Q>() {
+	static <Q extends Quantity<Q>> Statistics<Q> just(Quantity<Q> q) {
+		return new Statistics<>() {
 			@Override
 			public Quantity<Q> getAverage() {
 				return q;

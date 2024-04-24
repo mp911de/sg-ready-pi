@@ -13,40 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi;
+package biz.paluch.sgreadypi.measure;
 
-import biz.paluch.sgreadypi.measure.Percent;
-import biz.paluch.sgreadypi.measure.Watt;
-import biz.paluch.sgreadypi.provider.Statistics;
+import tech.units.indriya.quantity.Quantities;
+import tech.units.indriya.unit.Units;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
-import javax.measure.quantity.Power;
 
 /**
- * Power generator service (battery, inverter, …) that generates power.
+ * Percent quantity factory.
  *
  * @author Mark Paluch
  */
-public interface PowerGeneratorService {
+public class Percent {
+
+	private static final Quantity<Dimensionless> ZERO = of(0);
 
 	/**
-	 * @return percentage of battery charge state.
+	 * Create Quantity from percentage {@code value}.
+	 *
+	 * @param value percentage value.
+	 * @return
 	 */
-	default Quantity<Dimensionless> getBatteryStateOfCharge() {
-		return Percent.zero();
+	public static Quantity<Dimensionless> of(int value) {
+		return Quantities.getQuantity(value, Units.PERCENT);
 	}
 
 	/**
-	 * @return available generator power in {@link tech.units.indriya.unit.Units#WATT}.
+	 * @return zero percent quantity.
 	 */
-	default Statistics<Power> getGeneratorPower() {
-		return Statistics.just(Watt.zero());
+	public static Quantity<Dimensionless> zero() {
+		return ZERO;
 	}
-
-	/**
-	 * @return {@code true} if the service is alive and has recent data.
-	 */
-	boolean hasData();
-
 }
