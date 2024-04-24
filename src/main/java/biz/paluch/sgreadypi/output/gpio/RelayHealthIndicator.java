@@ -19,7 +19,7 @@ import lombok.Value;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.stereotype.Component;
+
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.gpio.digital.DigitalState;
 
@@ -38,6 +38,7 @@ class RelayHealthIndicator implements HealthIndicator {
 
 		builder.withDetail("ch1", toString(relay.getCh1()));
 		builder.withDetail("ch2", toString(relay.getCh2()));
+		builder.withDetail("ch3", toString(relay.getCh3()));
 
 		return builder.build();
 	}

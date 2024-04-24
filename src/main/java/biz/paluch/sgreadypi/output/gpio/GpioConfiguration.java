@@ -23,13 +23,16 @@ import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.Duration;
 import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.TaskScheduler;
 
 import com.pi4j.Pi4J;
@@ -55,7 +58,8 @@ public class GpioConfiguration {
 	 */
 	@Bean
 	@Primary
-	DebounceStateConsumer debounce(ObjectProvider<SgReadyStateConsumer> stateConsumers, TaskScheduler scheduler, SgReadyProperties properties) {
+	DebounceStateConsumer debounce(ObjectProvider<SgReadyStateConsumer> stateConsumers, TaskScheduler scheduler,
+			SgReadyProperties properties) {
 
 		List<SgReadyStateConsumer> list = stateConsumers.stream().toList();
 
@@ -72,7 +76,7 @@ public class GpioConfiguration {
 
 			GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
 
-			return new PiRelHat3Ch(meterRegistry, context, rpi3Ch.pinA(), rpi3Ch.pinB());
+			return new PiRelHat3Ch(meterRegistry, context, rpi3Ch.pinA(), rpi3Ch.pinB(), rpi3Ch.pinC());
 		}
 
 		@Bean

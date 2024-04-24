@@ -16,6 +16,8 @@
 package biz.paluch.sgreadypi.output.gpio;
 
 /**
+ * GPIO properties to configure the SG Ready state output.
+ *
  * @author Mark Paluch
  */
 public record GpioProperties(Rpi3Ch rpi3Ch) {
@@ -25,8 +27,9 @@ public record GpioProperties(Rpi3Ch rpi3Ch) {
 	 *
 	 * @param pinA GPIO (BCM) pin for SG Ready A.
 	 * @param pinB GPIO (BCM) pin for SG Ready B.
+	 * @param pinC GPIO (BCM) pin for SG Ready A and B (AND operation of A and B states).
 	 */
-	public record Rpi3Ch(int pinA, int pinB) {
+	public record Rpi3Ch(int pinA, int pinB, int pinC) {
 
 	}
 

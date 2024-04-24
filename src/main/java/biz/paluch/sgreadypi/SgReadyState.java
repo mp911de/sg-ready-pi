@@ -47,4 +47,21 @@ public record SgReadyState(String name, boolean a, boolean b) {
 	public String toString() {
 		return "%s (%s:%s)".formatted(name(), a ? 1 : 0, b ? 1 : 0);
 	}
+
+	public SgReadyState valueOf(String value) {
+
+		switch (value) {
+			case "BLOCKED":
+				return BLOCKED;
+			case "NORMAL":
+				return NORMAL;
+			case "AVAILABLE_PV":
+				return AVAILABLE_PV;
+			case "EXCESS_PV":
+				return EXCESS_PV;
+		}
+
+		throw new IllegalArgumentException("Cannot resolve " + value + " to a SgReadyState");
+
+	}
 }

@@ -16,7 +16,6 @@
 package biz.paluch.sgreadypi.output.gpio;
 
 import biz.paluch.sgreadypi.SgReadyState;
-import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
@@ -28,6 +27,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import com.pi4j.context.Context;
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.gpio.digital.DigitalState;
@@ -45,8 +45,10 @@ public class PiRelHat3Ch implements Relay {
 
 	private final DigitalOutput ch2;
 
-	private final DigitalOutput ch3 = null; // unused;
+	private final DigitalOutput ch3;
+
 	private final Context context;
+
 	private final MeterRegistry meterRegistry;
 
 	private final Map<SgReadyState, Timer> timing = new ConcurrentHashMap<>();
@@ -55,7 +57,7 @@ public class PiRelHat3Ch implements Relay {
 
 	private volatile Instant lastUpdate = Instant.now();
 
-	public PiRelHat3Ch(MeterRegistry meterRegistry, Context context, int ch1, int ch2) {
+	public PiRelHat3Ch(MeterRegistry meterRegistry, Context context, int ch1, int ch2, int ch3) {
 
 		this.meterRegistry = meterRegistry;
 
@@ -63,8 +65,11 @@ public class PiRelHat3Ch implements Relay {
 				.shutdown(DigitalState.HIGH).build();
 		var ch2Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch2).name("CH2").address(ch2)
 				.shutdown(DigitalState.HIGH).build();
+		var ch3Config = DigitalOutput.newConfigBuilder(context).id("BCM D" + ch3).name("CH3").address(ch3)
+				.shutdown(DigitalState.HIGH).build();
 		this.ch1 = context.create(ch1Config);
 		this.ch2 = context.create(ch2Config);
+		this.ch3 = context.create(ch3Config);
 		this.context = context;
 	}
 
@@ -95,6 +100,7 @@ public class PiRelHat3Ch implements Relay {
 		this.state = state;
 		this.ch1.state(getState(state.a()));
 		this.ch2.state(getState(state.b()));
+		this.ch3.state(getState(state.a() && state.b()));
 	}
 
 	private static DigitalState getState(boolean state) {

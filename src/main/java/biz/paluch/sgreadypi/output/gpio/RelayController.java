@@ -28,7 +28,7 @@ import com.pi4j.io.gpio.digital.DigitalState;
  */
 @RestController
 @ConditionalOnRaspberryPi
-@RequestMapping("relay")
+@RequestMapping("api/relay")
 @Value
 class RelayController {
 
@@ -40,6 +40,7 @@ class RelayController {
 		return switch (channel) {
 			case 1 -> relay.getCh1().state().name();
 			case 2 -> relay.getCh2().state().name();
+			case 3 -> relay.getCh3().state().name();
 			default -> throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 		};
 	}
@@ -47,11 +48,12 @@ class RelayController {
 	@PostMapping("{channel}")
 	public String getState(@PathVariable("channel") int channel, @RequestBody String body) {
 
-		DigitalState state = DigitalState.valueOf(body);
+		DigitalState state = DigitalState.valueOf(body.trim());
 
 		return switch (channel) {
 			case 1 -> relay.getCh1().state(state).state().name();
 			case 2 -> relay.getCh2().state(state).state().name();
+			case 3 -> relay.getCh3().state(state).state().name();
 			default -> throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 		};
 	}
