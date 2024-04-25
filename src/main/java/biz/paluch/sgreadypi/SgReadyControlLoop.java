@@ -107,7 +107,7 @@ public class SgReadyControlLoop {
 
 		if (gte(ingress, properties.getIngressLimit())) {
 			// apply state
-			return new Decision(SgReadyState.NORMAL,
+			return Decision.normal(
 					ConditionOutcome.match("Ingress %s exceeds limit %s".formatted(ingress, properties.getIngressLimit())));
 		}
 
@@ -123,27 +123,26 @@ public class SgReadyControlLoop {
 			if (qualifiesForExcessPower.isMatch()) {
 
 				if (gte(soc, battery.pvExcessOn())) {
-					return new Decision(SgReadyState.EXCESS_PV, qualifiesForExcessPower.nestedMatch(
+					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
 							"Battery SoC %s above SoC for excess PV start threshold %s %%".formatted(soc, battery.pvExcessOn())));
 				}
 
 				if (currentState == SgReadyState.NORMAL) {
-					return new Decision(SgReadyState.AVAILABLE_PV,
-							qualifiesForExcessPower.nestedNoMatch(
-									"Battery SoC %s below SoC for excess PV start threshold %s %%, switching from normal to available"
-											.formatted(soc, battery.pvExcessOn())));
+					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
+							"Battery SoC %s below SoC for excess PV start threshold %s %%, switching from normal to available"
+									.formatted(soc, battery.pvExcessOn())));
 				}
 
 				return new Decision(currentState, qualifiesForExcessPower.nestedNoMatch("Retaining state"));
 			} else if (gte(soc, battery.pvAvailable())) {
-				return new Decision(SgReadyState.AVAILABLE_PV, qualifiesForExcessPower
+				return Decision.availablePv(qualifiesForExcessPower
 						.nestedMatch("Battery SoC %s of charge above required SoC %s %%".formatted(soc, battery.pvAvailable())));
 			}
 
 			return new Decision(currentState, match.nestedNoMatch("Retaining current state"));
 		}
 
-		return new Decision(SgReadyState.NORMAL, ConditionOutcome.noMatch("Generator power below heat pump consumption"));
+		return Decision.normal(ConditionOutcome.noMatch("Generator power below heat pump consumption"));
 	}
 
 	private ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
@@ -321,6 +320,35 @@ public class SgReadyControlLoop {
 
 	record Decision(SgReadyState state, ConditionOutcome conditionOutcome) {
 
+		/**
+		 * A decision resulting in {@link SgReadyState#NORMAL}.
+		 *
+		 * @param outcome
+		 * @return
+		 */
+		static Decision normal(ConditionOutcome outcome) {
+			return new Decision(SgReadyState.NORMAL, outcome);
+		}
+
+		/**
+		 * A decision resulting in {@link SgReadyState#AVAILABLE_PV}.
+		 *
+		 * @param outcome
+		 * @return
+		 */
+		static Decision availablePv(ConditionOutcome outcome) {
+			return new Decision(SgReadyState.AVAILABLE_PV, outcome);
+		}
+
+		/**
+		 * A decision resulting in {@link SgReadyState#EXCESS_PV}.
+		 *
+		 * @param outcome
+		 * @return
+		 */
+		static Decision excessPv(ConditionOutcome outcome) {
+			return new Decision(SgReadyState.EXCESS_PV, outcome);
+		}
 	}
 
 }
