@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import tech.units.indriya.unit.Units;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +55,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 	private final Map<String, SmaModbusClient> clients = new LinkedHashMap<>();
 	private final Map<String, InverterState> stateMap = new ConcurrentHashMap<>();
 
-	private final Map<String, MutableStatistics<Power>> stats = new LinkedHashMap<>();
+	private final Map<String, MutableStatistics<Power>> stats = Collections.synchronizedMap(new LinkedHashMap<>());
 
 	private final SgReadyProperties properties;
 	private final TaskScheduler executorService;

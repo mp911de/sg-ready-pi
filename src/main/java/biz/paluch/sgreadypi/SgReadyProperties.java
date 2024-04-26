@@ -67,7 +67,15 @@ public class SgReadyProperties {
 	 */
 	Quantity<Power> ingressLimit = Watt.of(200);
 
+	/**
+	 * Limit {@link SgReadyState#EXCESS_PV} to not be applied before a specific local time.
+	 */
 	@Nullable LocalTime excessNotBefore;
+
+	/**
+	 * Limit {@link SgReadyState#EXCESS_PV} to not be applied after a specific local time.
+	 */
+	@Nullable LocalTime excessNotAfter;
 
 	Levels battery = new Levels(Percent.of(20), Percent.of(80), Percent.of(60));
 

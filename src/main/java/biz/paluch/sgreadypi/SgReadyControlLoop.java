@@ -117,8 +117,8 @@ public class SgReadyControlLoop {
 					.formatted(generatorPower, properties.getHeatPumpPowerConsumption()));
 
 			SgReadyProperties.Levels battery = properties.getBattery();
-			ConditionOutcome qualifiesForExcessPower = match
-					.nested(qualifiesForExcessPower(battery, properties.getExcessNotBefore(), soc));
+			ConditionOutcome qualifiesForExcessPower = match.nested(
+					qualifiesForExcessPower(battery, properties.getExcessNotBefore(), properties.getExcessNotAfter(), soc));
 
 			if (qualifiesForExcessPower.isMatch()) {
 
@@ -146,19 +146,36 @@ public class SgReadyControlLoop {
 	}
 
 	private ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
-			@Nullable LocalTime excessNotBefore, Quantity<Dimensionless> soc) {
+			@Nullable LocalTime excessNotBefore, @Nullable LocalTime excessNotAfter, Quantity<Dimensionless> soc) {
 
 		ConditionOutcome outcome = null;
+		LocalDateTime now = LocalDateTime.now(clock);
+
 		if (excessNotBefore != null) {
 
-			LocalDateTime now = LocalDateTime.now(clock);
-
 			if (now.toLocalTime().isBefore(excessNotBefore)) {
-				return ConditionOutcome
-						.noMatch("Current time %s before excess power is allowed %s".formatted(now.toLocalTime(), excessNotBefore));
+				return ConditionOutcome.noMatch("Current time %s before excess power is allowed %s (not-before)"
+						.formatted(now.toLocalTime(), excessNotBefore));
 			} else {
-				outcome = ConditionOutcome
-						.match("Current time %s after excess power is allowed %s".formatted(now.toLocalTime(), excessNotBefore));
+				outcome = ConditionOutcome.match("Current time %s after excess power is allowed %s (not-before)"
+						.formatted(now.toLocalTime(), excessNotBefore));
+			}
+		}
+
+		if (excessNotAfter != null) {
+
+			ConditionOutcome notAfter;
+			if (now.toLocalTime().isAfter(excessNotAfter)) {
+				notAfter = ConditionOutcome.noMatch("Current time %s after excess power is allowed %s (not-after)"
+						.formatted(now.toLocalTime(), excessNotAfter));
+			} else {
+				notAfter = ConditionOutcome.match("Current time %s after excess power is allowed %s (not-after)"
+						.formatted(now.toLocalTime(), excessNotAfter));
+			}
+
+			outcome = outcome == null ? notAfter : outcome.nested(notAfter);
+			if (!notAfter.isMatch()) {
+				return outcome;
 			}
 		}
 

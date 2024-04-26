@@ -124,7 +124,7 @@ class SgReadyControlLoopUnitTests {
 	}
 
 	@Test
-	void shouldLimitExcessToTime() {
+	void shouldLimitExcessToTimeNotBefore() {
 
 		LocalDateTime ldt = LocalDateTime.parse("2007-12-03T10:15:30");
 
@@ -136,15 +136,15 @@ class SgReadyControlLoopUnitTests {
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(80));
 		when(powerMeter.getIngress()).thenReturn(Statistics.just(Watt.zero()));
 
-		properties.setExcessNotBefore(LocalTime.of(14, 00));
+		properties.setExcessNotBefore(LocalTime.of(14, 0));
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.AVAILABLE_PV);
 
-		properties.setExcessNotBefore(LocalTime.of(10, 00));
+		properties.setExcessNotBefore(LocalTime.of(10, 0));
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
 
-		properties.setExcessNotBefore(LocalTime.of(14, 00));
+		properties.setExcessNotBefore(LocalTime.of(14, 0));
 
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.AVAILABLE_PV);
@@ -153,7 +153,34 @@ class SgReadyControlLoopUnitTests {
 
 		controller.control();
 		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
+	}
 
+	@Test
+	void shouldLimitExcessToTimeNotAfter() {
+
+		LocalDateTime ldt = LocalDateTime.parse("2007-12-03T10:15:30");
+
+		Clock fixed = Clock.fixed(ldt.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, fixed);
+
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));
+		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(80));
+		when(powerMeter.getIngress()).thenReturn(Statistics.just(Watt.zero()));
+
+		properties.setExcessNotAfter(LocalTime.of(14, 0));
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
+
+		properties.setExcessNotAfter(LocalTime.of(9, 40));
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.AVAILABLE_PV);
+
+		properties.setExcessNotBefore(LocalTime.of(9, 0));
+		properties.setExcessNotAfter(LocalTime.of(11, 0));
+
+		controller.control();
+		assertThat(controller.getState()).isEqualTo(SgReadyState.EXCESS_PV);
 	}
 
 	@Test
