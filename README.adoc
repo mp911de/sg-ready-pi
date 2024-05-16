@@ -3,12 +3,17 @@
 This application is an SG Ready Controller to determine available power vs. power consumption and derive a SG- Ready State.
 This is done by reading from a power generator such as PV inverter including batteries and comparing egress/ingress to a power meter reading.
 
-https://www.waermepumpe.de/normen-technik/sg-ready/[SG Ready] is a standard to indicate the following states to an eletrical heater:
+https://www.waermepumpe.de/normen-technik/sg-ready/[SG Ready] is a standard to indicate the following states to an electrical heat pump:
 
 * Normal State (No indication, `0:0`)
 * Lock (Reduce power consumption, `1:0`)
 * Available Power/Low Tariff (Increase Temperature, Indicate that consuming power now would be favorable, `0:1`)
 * Switch on Heating/Excess Power (Switch on the heater to consume excess power,  `1:1`)
+
+The underlying idea is that hot water tanks are effectively batteries.
+Heating water up with excess power combined with good insulation acts as energy buffer and so, the water tank doesn't require heating for quite a while.
+This concept only works when heating water beyond the regular temperature as the excess heat takes longer to cool off.
+Ideally, the next water heating cycle falls into a time when solar power is available so that you don't need the heater during night hours.
 
 == Hardware
 
@@ -37,6 +42,25 @@ Currently supported:
 
 * SMA Tripower over Modbus TCP (more models could be potentially supported)
 
+=== Weather Forecast-based optimization
+
+To optimize energy consumption, this project calculates sunset times and obtains a https://open-meteo.com[weather forecast] for your position (see `sg.weather.longitude`/`sg.weather.latitude` properties).
+Based on `sg.weather.desired-excess-duration` (how long SG Ready 1:1 should be active), forecast-based optimization determines the time in which we can consume solar power (less than 60% cloud coverage, duration of `sg.weather.not-before-sunset` before sunset) and enables excess power signalling in the time window to move power consumption to a time as late as possible.
+
+==== Weather Implications
+
+We're only interested in cloudiness.
+If there's rain, then there's also clouds.
+The current threshold is at 60% calculated for low and mid-level clouds.
+Cloudiness below that threshold is considered as sunny time meaning there's sufficient energy available.
+While some systems might provide sufficient energy at higher cloudiness, that's a good starting point.
+
+==== Sunset
+
+When there's sun, then likely, we can generate energy from it.
+Clearly, the more the sun sets, the less excess energy we can generate from it.
+Therefore, we have a configurable duration (`sg.weather.not-before-sunset`) that limits how much time before sunset we can obtain a reasonable amount of solar power to avoid draining the battery.
+
 == Foundation
 
 This project is built with:
@@ -45,6 +69,7 @@ This project is built with:
 * https://github.com/spring-projects/spring-boot[Spring Boot 🍃]
 * https://github.com/Pi4J/pi4j-v2[Pi4J]
 * https://github.com/lujop/smasolarlib[smasolarlib] by https://github.com/lujop[lujop].
+* https://github.com/klausbrunner/solarpositioning[solarpositioning] by https://github.com/klausbrunner[Klaus Brunner].
 The code is inlined into this repo as there is no artifact available from Maven Central.
 
 == Building from Source
