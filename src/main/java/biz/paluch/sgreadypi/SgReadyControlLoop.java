@@ -17,10 +17,12 @@ package biz.paluch.sgreadypi;
 
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
+import biz.paluch.sgreadypi.weather.WeatherService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
@@ -52,17 +54,20 @@ public class SgReadyControlLoop {
 
 	private final SgReadyProperties properties;
 
+	private final WeatherService weatherService;
+
 	private final Clock clock;
 
 	@Getter private volatile SgReadyState state = SgReadyState.NORMAL;
 	@Getter private volatile Decision decision;
 
 	public SgReadyControlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
-			SgReadyStateConsumer stateConsumer, SgReadyProperties properties, Clock clock) {
+			SgReadyStateConsumer stateConsumer, SgReadyProperties properties, WeatherService weatherService, Clock clock) {
 		this.inverters = inverters;
 		this.powerMeter = powerMeter;
 		this.stateConsumer = stateConsumer;
 		this.properties = properties;
+		this.weatherService = weatherService;
 		this.clock = clock;
 	}
 
@@ -119,8 +124,30 @@ public class SgReadyControlLoop {
 			SgReadyProperties.Levels battery = properties.getBattery();
 			ConditionOutcome qualifiesForExcessPower = match.nested(
 					qualifiesForExcessPower(battery, properties.getExcessNotBefore(), properties.getExcessNotAfter(), soc));
+			boolean excess = qualifiesForExcessPower.isMatch();
 
-			if (qualifiesForExcessPower.isMatch()) {
+			if (properties.getWeather().isEnabled()) {
+
+				WeatherService.Range timeRange = weatherService.getUsableTimeRange();
+
+				if (timeRange.enoughRemainingSunHours()) {
+					excess = false;
+					qualifiesForExcessPower = qualifiesForExcessPower
+							.nestedNoMatch(String.format("Enough remaining sunny time %s, starting at %s until %s",
+									format(timeRange.remainingSunDuration()), timeRange.from(), timeRange.to()));
+				} else if (timeRange.afterSunset()) {
+					excess = false;
+					qualifiesForExcessPower = qualifiesForExcessPower.nestedNoMatch("After sunset");
+				} else if (timeRange.afterSunsetLimit()) {
+					excess = false;
+					qualifiesForExcessPower = qualifiesForExcessPower.nestedNoMatch("After sunset limit");
+				} else {
+					qualifiesForExcessPower = qualifiesForExcessPower
+							.nestedMatch(String.format("Using remaining %s sunny time", format(timeRange.remainingSunDuration())));
+				}
+			}
+
+			if (excess) {
 
 				if (gte(soc, battery.pvExcessOn())) {
 					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
@@ -143,6 +170,10 @@ public class SgReadyControlLoop {
 		}
 
 		return Decision.normal(ConditionOutcome.noMatch("Generator power below heat pump consumption"));
+	}
+
+	static String format(Duration duration) {
+		return duration.toString().substring(2);
 	}
 
 	private ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,

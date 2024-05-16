@@ -18,6 +18,7 @@ package biz.paluch.sgreadypi;
 import biz.paluch.sgreadypi.measure.Percent;
 import biz.paluch.sgreadypi.measure.Watt;
 import biz.paluch.sgreadypi.output.gpio.GpioProperties;
+import biz.paluch.sgreadypi.weather.GeoPosition;
 import lombok.Data;
 
 import java.time.Duration;
@@ -83,6 +84,8 @@ public class SgReadyProperties {
 
 	Duration debounce = Duration.ofMinutes(5);
 
+	Weather weather;
+
 	/**
 	 * @param pvAvailable Battery state of Charge indicating unused PV energy. Used to recommend heat pump temperature
 	 *          increase/energy availability.
@@ -93,6 +96,30 @@ public class SgReadyProperties {
 	 */
 	public record Levels(Quantity<Dimensionless> pvAvailable, Quantity<Dimensionless> pvExcessOn,
 			Quantity<Dimensionless> pvExcessOff) {
+	}
+
+	/**
+	 * Configuration properties to configure weather-based predications considering the sun position.
+	 */
+	@Data
+	public static final class Weather {
+
+		private boolean enabled = false;
+		private double latitude;
+		private double longitude;
+		private Duration notBeforeSunset = Duration.ofMinutes((2 * 60) + 30);
+
+		/**
+		 * Duration of {@link SgReadyState#EXCESS_PV} that we want to consume depending on weather predictions. The default
+		 * is to stop {@link SgReadyState#EXCESS_PV} until the duration before sunset is reached. In cases, where some hours
+		 * before sunset is cloudy, we know that we won't have enough energy so we try to start earlier consume excess
+		 * energy.
+		 */
+		Duration desiredExcessDuration = Duration.ofHours(3);
+
+		public GeoPosition getGeoPosition() {
+			return new GeoPosition(latitude, longitude);
+		}
 	}
 
 }

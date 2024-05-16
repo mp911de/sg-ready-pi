@@ -15,12 +15,6 @@
  */
 package biz.paluch.sgreadypi;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -31,6 +25,11 @@ import biz.paluch.sgreadypi.provider.Statistics;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,8 +57,9 @@ class SgReadyControlLoopUnitTests {
 	void setUp() {
 
 		properties.setHeatPumpPowerConsumption(Watt.of(100));
+		properties.setWeather(new SgReadyProperties.Weather());
 
-		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties,
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, null,
 				Clock.systemDefaultZone());
 		when(inverters.hasData()).thenReturn(true);
 		when(powerMeter.hasData()).thenReturn(true);
@@ -130,7 +130,8 @@ class SgReadyControlLoopUnitTests {
 
 		Clock fixed = Clock.fixed(ldt.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 
-		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, fixed);
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, null,
+				fixed);
 
 		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(80));
@@ -162,7 +163,8 @@ class SgReadyControlLoopUnitTests {
 
 		Clock fixed = Clock.fixed(ldt.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 
-		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, fixed);
+		controller = new SgReadyControlLoop(inverters, powerMeter, mock(SgReadyStateConsumer.class), properties, null,
+				fixed);
 
 		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(80));

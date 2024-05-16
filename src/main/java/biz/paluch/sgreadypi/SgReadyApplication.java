@@ -17,6 +17,7 @@ package biz.paluch.sgreadypi;
 
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
+import biz.paluch.sgreadypi.weather.WeatherService;
 
 import java.time.Clock;
 
@@ -47,9 +48,14 @@ public class SgReadyApplication {
 	}
 
 	@Bean
+	Clock clock() {
+		return Clock.systemDefaultZone();
+	}
+
+	@Bean
 	public SgReadyControlLoop controlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
-			SgReadyStateConsumer stateConsumer, SgReadyProperties properties) {
-		return new SgReadyControlLoop(inverters, powerMeter, stateConsumer, properties, Clock.systemDefaultZone());
+			SgReadyStateConsumer stateConsumer, SgReadyProperties properties, WeatherService weatherService, Clock clock) {
+		return new SgReadyControlLoop(inverters, powerMeter, stateConsumer, properties, weatherService, clock);
 	}
 
 }
