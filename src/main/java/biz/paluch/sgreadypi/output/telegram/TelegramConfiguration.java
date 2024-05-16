@@ -25,12 +25,12 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Telegram configuration.
- * 
+ *
  * @author Mark Paluch
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(TelegramProperties.class)
-@ConditionalOnProperty("sg.telegram.token")
+@ConditionalOnProperty(value = "sg.telegram.enabled", havingValue = "true")
 public class TelegramConfiguration {
 
 	@Bean
