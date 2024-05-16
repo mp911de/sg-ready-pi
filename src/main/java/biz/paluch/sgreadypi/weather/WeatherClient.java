@@ -35,7 +35,7 @@ import org.springframework.web.client.RestTemplate;
  */
 class WeatherClient {
 
-	private static final String API_URL = "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature,weather_code,cloud_cover,pressure_msl,surface_pressure&hourly=temperature_2m,weather_code,cloud_cover&forecast_days=1";
+	private static final String API_URL = "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature,weather_code,pressure_msl,surface_pressure&hourly=temperature_2m,weather_code,cloud_cover_low,cloud_cover_mid&forecast_days=1";
 	private final Duration UPDATE_DELAY = Duration.ofHours(1);
 
 	private final RestTemplate restTemplate;
@@ -85,8 +85,10 @@ class WeatherClient {
 
 			LocalDateTime localResponse = hourly.time.get(i);
 			LocalDateTime here = localResponse.atZone(responseZone).toInstant().atZone(zone).toLocalDateTime();
+			int mid = hourly.cloudMid.get(i);
+			int low = hourly.cloudLow.get(i);
 
-			coverages.add(new WeatherState.CloudCoverage(here, hourly.cloud.get(i)));
+			coverages.add(new WeatherState.CloudCoverage(here, (int) Math.max(low, mid * 0.8)));
 		}
 
 		return new WeatherState((int) response.current.temperature, (int) response.current.pressure, coverages);

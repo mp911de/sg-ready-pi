@@ -49,7 +49,8 @@ class WeatherResponse {
 
 		@JsonProperty("time") List<LocalDateTime> time;
 
-		@JsonProperty("cloud_cover") List<Integer> cloud;
+		@JsonProperty("cloud_cover_low") List<Integer> cloudLow;
+		@JsonProperty("cloud_cover_mid") List<Integer> cloudMid;
 
 	}
 }

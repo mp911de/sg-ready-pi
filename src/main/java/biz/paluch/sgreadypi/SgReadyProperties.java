@@ -112,7 +112,7 @@ public class SgReadyProperties {
 		/**
 		 * Duration of {@link SgReadyState#EXCESS_PV} that we want to consume depending on weather predictions. The default
 		 * is to stop {@link SgReadyState#EXCESS_PV} until the duration before sunset is reached. In cases, where some hours
-		 * before sunset is cloudy, we know that we won't have enough energy so we try to start earlier consume excess
+		 * before sunset is cloudy, we know that we won't have enough energy, so we try to start earlier consume excess
 		 * energy.
 		 */
 		Duration desiredExcessDuration = Duration.ofHours(3);
