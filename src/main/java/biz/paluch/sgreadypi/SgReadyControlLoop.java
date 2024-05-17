@@ -125,21 +125,22 @@ public class SgReadyControlLoop {
 			ConditionOutcome qualifiesForExcessPower = match.nested(
 					qualifiesForExcessPower(battery, properties.getExcessNotBefore(), properties.getExcessNotAfter(), soc));
 			boolean excess = qualifiesForExcessPower.isMatch();
+			boolean weather = true;
 
 			if (properties.getWeather().isEnabled()) {
 
 				WeatherService.Range timeRange = weatherService.getUsableTimeRange();
 
 				if (timeRange.enoughRemainingSunHours()) {
-					excess = false;
+					weather = false;
 					qualifiesForExcessPower = qualifiesForExcessPower
 							.nestedNoMatch(String.format("Enough remaining sunny time %s, starting at %s until %s",
 									format(timeRange.remainingSunDuration()), timeRange.from(), timeRange.to()));
 				} else if (timeRange.afterSunset()) {
-					excess = false;
+					weather = false;
 					qualifiesForExcessPower = qualifiesForExcessPower.nestedNoMatch("After sunset");
 				} else if (timeRange.afterSunsetLimit()) {
-					excess = false;
+					weather = false;
 					qualifiesForExcessPower = qualifiesForExcessPower.nestedNoMatch("After sunset limit");
 				} else {
 					qualifiesForExcessPower = qualifiesForExcessPower
@@ -147,7 +148,7 @@ public class SgReadyControlLoop {
 				}
 			}
 
-			if (excess) {
+			if (excess && weather) {
 
 				if (gte(soc, battery.pvExcessOn())) {
 					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
@@ -163,10 +164,11 @@ public class SgReadyControlLoop {
 				return new Decision(currentState, qualifiesForExcessPower.nestedNoMatch("Retaining state"));
 			} else if (gte(soc, battery.pvAvailable())) {
 				return Decision.availablePv(qualifiesForExcessPower
-						.nestedMatch("Battery SoC %s of charge above required SoC %s %%".formatted(soc, battery.pvAvailable())));
+						.nestedMatch("Battery SoC %s above required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
+			} else {
+				return Decision.availablePv(qualifiesForExcessPower
+						.nestedNoMatch("Battery SoC %s below required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
 			}
-
-			return new Decision(currentState, match.nestedNoMatch("Retaining current state"));
 		}
 
 		return Decision.normal(ConditionOutcome.noMatch("Generator power below heat pump consumption"));
