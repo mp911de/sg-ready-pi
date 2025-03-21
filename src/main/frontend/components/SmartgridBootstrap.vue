@@ -11,6 +11,7 @@
           <td><b>Value</b></td>
         </tr>
         </thead>
+        <tbody>
         <tr>
           <td>SG Ready State</td>
           <td>{{ health.components.debounce.details.current }}</td>
@@ -35,6 +36,18 @@
             ({{ health.components.sunnyHomeManager.details['egress-momentary'] }})
           </td>
         </tr>
+        <tr>
+          <td>Detail</td>
+          <td>
+            <ul style="list-style: none" >
+              <li v-for="item in health.components.sgReady.details['sg-ready-decision']">
+                <span v-if="item.includes('Did match')">✅</span><span v-if="!item.includes('Did match')">⚠️</span>
+                {{ item }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+        </tbody>
       </table>
 
     </b-jumbotron>
@@ -112,6 +125,7 @@ export default {
   data() {
     return {
       interval: undefined,
+      debounce: {},
       relay: {
         "1": "",
         "2": "",

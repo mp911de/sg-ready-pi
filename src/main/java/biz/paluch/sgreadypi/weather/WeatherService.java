@@ -52,7 +52,7 @@ public class WeatherService {
 	WeatherService(SgReadyProperties.Weather properties, WeatherClient weatherClient, Clock clock) {
 		this.properties = properties;
 		this.clock = clock;
-		this.position = this.properties.getGeoPosition();
+		this.position = this.properties != null ? this.properties.getGeoPosition() : null;
 		this.client = weatherClient;
 		this.calculator = new SunPositionCalculator(clock);
 	}
