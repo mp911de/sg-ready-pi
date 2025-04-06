@@ -1,9 +1,21 @@
 <template>
   <div class="container">
     <b-jumbotron
-        header="Smartgrid"
         lead="Current Status">
+      <template #header><a href="/actuator/health">Smartgrid</a></template>
 
+      <div>
+        <b-button @click="updateRelayState('1')" :variant="getButtonVariant('1')">
+          CH1: {{ getButtonLabel('1') }}
+        </b-button>&nbsp;
+        <b-button @click="updateRelayState('2')" :variant="getButtonVariant('2')">
+          CH2: {{ getButtonLabel('2') }}
+        </b-button>&nbsp;
+        <b-button @click="updateRelayState('3')" :variant="getButtonVariant('3')">
+          CH3: {{ getButtonLabel('3') }}
+        </b-button>
+      </div>
+      <br/>
       <table role="table" class="table b-table table-striped table-hover">
         <thead>
         <tr>
@@ -39,7 +51,7 @@
         <tr>
           <td>Detail</td>
           <td>
-            <ul style="list-style: none" >
+            <ul style="list-style: none">
               <li v-for="item in health.components.sgReady.details['sg-ready-decision']">
                 <span v-if="item.includes('Did match')">✅</span><span v-if="!item.includes('Did match')">⚠️</span>
                 {{ item }}
@@ -51,17 +63,7 @@
       </table>
 
     </b-jumbotron>
-    <div>
-      <b-button @click="updateRelayState('1')" :variant="getButtonVariant('1')">
-        CH1: {{ getButtonLabel('1') }}
-      </b-button>&nbsp;
-      <b-button @click="updateRelayState('2')" :variant="getButtonVariant('2')">
-        CH2: {{ getButtonLabel('2') }}
-      </b-button>&nbsp;
-      <b-button @click="updateRelayState('3')" :variant="getButtonVariant('3')">
-        CH3: {{ getButtonLabel('3') }}
-      </b-button>
-    </div>
+
   </div>
 </template>
 <script>
@@ -107,6 +109,10 @@ export default {
 
     async getHealth() {
       const {data} = await axios.get("/actuator/health");
+
+      if (!data.components.debounce) {
+        data.components.debounce = {};
+      }
       this.health = data;
     },
 
@@ -125,30 +131,67 @@ export default {
   data() {
     return {
       interval: undefined,
-      debounce: {},
+
       relay: {
         "1": "",
         "2": "",
         "3": ""
       },
-      health: {"status": "?"}
+      health: {
+        "status": "?",
+        components: {
+          debounce: {
+            details: {
+              "current": "",
+              "next": "",
+              "next-update": "",
+              "last-update": "",
+              "synchronized": true
+            }
+          },
+          smaPowerGenerator: {
+            details: {
+              "generator-power": "",
+              "generator-power-momentary": "",
+              "battery-soc": "",
+            }
+          },
+          sunnyHomeManager: {
+            details: {
+              "ingress": "",
+              "ingress-momentary": "",
+              "egress": "",
+              "egress-momentary": "",
+            }
+          },
+          sgReady: {
+            details: {
+              "sg-ready-decision": [],
+            }
+          }
+        }
+      }
     };
   },
 
   created() {
     this.getHealth() // first run
     this.interval = setInterval(this.getHealth, 2000)
-  },
+  }
+  ,
 
   beforeMount() {
     this.getHealth();
     this.getRelayStates();
-  },
+  }
+  ,
   beforeDestroy() {
     if (this.interval) {
       clearIntervall(this.interval)
       this.interval = undefined
     }
-  },
-};
+  }
+  ,
+}
+;
 </script>

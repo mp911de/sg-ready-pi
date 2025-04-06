@@ -25,6 +25,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAmount;
 import java.util.concurrent.TimeUnit;
 
 import javax.measure.Quantity;
@@ -45,6 +50,14 @@ import org.springframework.scheduling.annotation.Scheduled;
  */
 @Slf4j
 public class SgReadyControlLoop {
+
+	private static DateTimeFormatter DURATION = new DateTimeFormatterBuilder()
+			.appendValue(ChronoField.HOUR_OF_DAY, 2) //
+			.appendLiteral(':') //
+			.appendValue(ChronoField.MINUTE_OF_HOUR, 2) //
+			.appendLiteral(':') //
+			.appendValue(ChronoField.SECOND_OF_MINUTE, 2) //
+			.toFormatter();
 
 	private final PowerGeneratorService inverters;
 
@@ -161,7 +174,8 @@ public class SgReadyControlLoop {
 									.formatted(soc, battery.pvExcessOn())));
 				}
 
-				return new Decision(currentState, qualifiesForExcessPower.nestedNoMatch("Retaining state"));
+				return new Decision(currentState,
+						qualifiesForExcessPower.nestedMatch("Battery SoC %s SoC retaining %s".formatted(soc, currentState)));
 			} else if (gte(soc, battery.pvAvailable())) {
 				return Decision.availablePv(qualifiesForExcessPower
 						.nestedMatch("Battery SoC %s above required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
@@ -175,7 +189,7 @@ public class SgReadyControlLoop {
 	}
 
 	static String format(Duration duration) {
-		return duration.toString().substring(2);
+		return DURATION.format(duration.addTo(LocalTime.of(0, 0)));
 	}
 
 	private ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
@@ -263,6 +277,18 @@ public class SgReadyControlLoop {
 	 */
 	static <Q extends Quantity<Q>> boolean gte(Quantity<Q> a, Quantity<Q> b) {
 		return a.getValue().doubleValue() >= b.getValue().doubleValue();
+	}
+
+	/**
+	 * Less than/equals comparison.
+	 *
+	 * @param a
+	 * @param b
+	 * @return
+	 * @param <Q>
+	 */
+	static <Q extends Quantity<Q>> boolean lte(Quantity<Q> a, Quantity<Q> b) {
+		return a.getValue().doubleValue() <= b.getValue().doubleValue();
 	}
 
 	/**
