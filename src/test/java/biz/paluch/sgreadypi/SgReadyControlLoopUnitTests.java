@@ -86,6 +86,16 @@ class SgReadyControlLoopUnitTests {
 	}
 
 	@Test
+	void shouldReportNormalBelowSoCAndAvailableGeneratorPower() {
+
+		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));
+		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.of(19));
+		when(powerMeter.getIngress()).thenReturn(Statistics.just(Watt.zero()));
+
+		assertThat(controller.createState()).isEqualTo(SgReadyState.NORMAL);
+	}
+
+	@Test
 	void shouldTurnOnHeatPumpOnExcessPower() {
 
 		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.of(100)));

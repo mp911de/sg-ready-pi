@@ -180,7 +180,7 @@ public class SgReadyControlLoop {
 				return Decision.availablePv(qualifiesForExcessPower
 						.nestedMatch("Battery SoC %s above required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
 			} else {
-				return Decision.availablePv(qualifiesForExcessPower
+				return Decision.normal(qualifiesForExcessPower
 						.nestedNoMatch("Battery SoC %s below required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
 			}
 		}
