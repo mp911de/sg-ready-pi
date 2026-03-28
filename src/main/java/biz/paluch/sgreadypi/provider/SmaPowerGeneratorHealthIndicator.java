@@ -15,14 +15,14 @@
  */
 package biz.paluch.sgreadypi.provider;
 
-import lombok.Value;
-
-import javax.measure.quantity.Power;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+
+import javax.measure.quantity.Power;
+
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,10 +31,7 @@ import org.springframework.stereotype.Component;
  * @author Mark Paluch
  */
 @Component
-@Value
-class SmaPowerGeneratorHealthIndicator implements HealthIndicator {
-
-	SmaPowerGeneratorService powerGenerator;
+record SmaPowerGeneratorHealthIndicator(SmaPowerGeneratorService powerGenerator) implements HealthIndicator {
 
 	@Override
 	public Health health() {

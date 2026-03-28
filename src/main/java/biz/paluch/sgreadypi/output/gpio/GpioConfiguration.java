@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
@@ -49,15 +50,13 @@ import com.pi4j.context.Context;
 public class GpioConfiguration {
 
 	@ConditionalOnRaspberryPi
-	@Bean(destroyMethod = "shutdown")
 	Context context(SgReadyProperties properties) {
-		return Pi4J.newAutoContext();
+		return Pi4J.newContextBuilder().autoDetect().enableShutdownHook().build();
 	}
 
 	@Conditional(NotOnRaspberryPi.class)
-	@Bean(destroyMethod = "shutdown")
 	Context mockContext(SgReadyProperties properties) {
-		return Pi4J.newAutoContextAllowMocks();
+		return Pi4J.newContextBuilder().autoDetect().autoDetectMockPlugins().build();
 	}
 
 	/**
@@ -78,6 +77,7 @@ public class GpioConfiguration {
 
 		@Bean
 		@ConditionalOnProperty("sg.gpio.rpi3-ch.pin-a")
+		@ConditionalOnBean(Context.class)
 		PiRelHat3Ch piRelHat3Ch(MeterRegistry meterRegistry, Context context, SgReadyProperties properties) {
 
 			GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
@@ -86,11 +86,13 @@ public class GpioConfiguration {
 		}
 
 		@Bean
+		@ConditionalOnBean(PiRelHat3Ch.class)
 		RelayHealthIndicator relayHealthIndicator(PiRelHat3Ch relay) {
 			return new RelayHealthIndicator(relay);
 		}
 
 		@Bean
+		@ConditionalOnBean(PiRelHat3Ch.class)
 		RelayController relayController(PiRelHat3Ch piRelHat3Ch) {
 			return new RelayController(piRelHat3Ch);
 		}

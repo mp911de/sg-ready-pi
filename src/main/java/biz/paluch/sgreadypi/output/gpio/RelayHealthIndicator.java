@@ -15,10 +15,9 @@
  */
 package biz.paluch.sgreadypi.output.gpio;
 
-import lombok.Value;
-
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.Health.Builder;
+import org.springframework.boot.health.contributor.HealthIndicator;
 
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.gpio.digital.DigitalState;
@@ -26,15 +25,12 @@ import com.pi4j.io.gpio.digital.DigitalState;
 /**
  * @author Mark Paluch
  */
-@Value
-class RelayHealthIndicator implements HealthIndicator {
-
-	PiRelHat3Ch relay;
+record RelayHealthIndicator(PiRelHat3Ch relay) implements HealthIndicator {
 
 	@Override
 	public Health health() {
 
-		Health.Builder builder = Health.up();
+		Builder builder = Health.up();
 
 		builder.withDetail("ch1", toString(relay.getCh1()));
 		builder.withDetail("ch2", toString(relay.getCh2()));
@@ -46,5 +42,4 @@ class RelayHealthIndicator implements HealthIndicator {
 	private static String toString(DigitalOutput relay) {
 		return relay.state() == DigitalState.LOW ? "closed" : "open";
 	}
-
 }

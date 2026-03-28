@@ -15,10 +15,8 @@
  */
 package biz.paluch.sgreadypi.output;
 
-import lombok.Value;
-
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
@@ -27,22 +25,19 @@ import org.springframework.stereotype.Component;
 @Component
 class DebounceHealthIndicator implements HealthIndicator {
 
-    private final DebounceStateConsumer consumer;
+	private final DebounceStateConsumer consumer;
 
-    public DebounceHealthIndicator(DebounceStateConsumer consumer) {
-        this.consumer = consumer;
-    }
+	public DebounceHealthIndicator(DebounceStateConsumer consumer) {
+		this.consumer = consumer;
+	}
 
-    @Override
-    public Health health() {
+	@Override
+	public Health health() {
 
-        return Health.up()
-                .withDetail("current", consumer.getCurrent().toString())
-                .withDetail("next", consumer.getNext().toString())
-                .withDetail("next-update", consumer.getNextUpdate())
-                .withDetail("last-update", consumer.getLastUpdate())
-                .withDetail("synchronized", consumer.isSynchronized())
-                .build();
-    }
+		return Health.up().withDetail("current", consumer.getCurrent().toString())
+				.withDetail("next", consumer.getNext().toString()).withDetail("next-update", consumer.getNextUpdate())
+				.withDetail("last-update", consumer.getLastUpdate()).withDetail("synchronized", consumer.isSynchronized())
+				.build();
+	}
 
 }

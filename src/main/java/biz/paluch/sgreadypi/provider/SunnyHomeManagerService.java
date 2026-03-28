@@ -15,13 +15,13 @@
  */
 package biz.paluch.sgreadypi.provider;
 
+import biz.paluch.sgreadypi.PowerMeter;
 import io.github.joblo2213.sma.speedwire.Speedwire;
 import io.github.joblo2213.sma.speedwire.protocol.measuringChannels.EnergyMeterChannels;
 import io.github.joblo2213.sma.speedwire.protocol.telegrams.DiscoveryResponse;
 import io.github.joblo2213.sma.speedwire.protocol.telegrams.EnergyMeterTelegram;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
 import java.io.IOException;
@@ -32,10 +32,6 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Power;
 
 import org.springframework.context.SmartLifecycle;
-
-import biz.paluch.sgreadypi.PowerMeter;
-
-import com.codahale.metrics.SlidingTimeWindowMovingAverages;
 
 /**
  * {@link PowerMeter} implementation for Sunny Home Manager 2.0.

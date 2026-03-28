@@ -15,15 +15,13 @@
  */
 package biz.paluch.sgreadypi.output.gpio;
 
-import java.util.Map;
 import org.springframework.boot.actuate.info.Info;
 import org.springframework.boot.actuate.info.InfoContributor;
 import org.springframework.stereotype.Component;
+
 import com.pi4j.boardinfo.model.DetectedBoard;
 import com.pi4j.boardinfo.util.BoardModelDetection;
 import com.pi4j.context.Context;
-import com.pi4j.io.IO;
-import com.pi4j.io.IOType;
 
 /**
  * @author Mark Paluch

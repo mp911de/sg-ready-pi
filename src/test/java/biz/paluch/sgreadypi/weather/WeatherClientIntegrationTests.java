@@ -19,9 +19,7 @@ import java.time.Clock;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.web.client.RestTemplateBuilder;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 
 /**
  * @author Mark Paluch

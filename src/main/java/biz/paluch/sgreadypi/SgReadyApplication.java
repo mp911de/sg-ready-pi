@@ -25,6 +25,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -36,7 +37,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class SgReadyApplication {
 
-	public static void main(String[] args) {
+	public static int main(String[] args) {
 
 		SpringApplication application = new SpringApplication(SgReadyApplication.class);
 
@@ -44,7 +45,11 @@ public class SgReadyApplication {
 			application.addListeners(new ApplicationPidFileWriter());
 		}
 
-		application.run(args);
+		ConfigurableApplicationContext context = application.run(args);
+		int exit = SpringApplication.exit(context, () -> 0);
+		System.exit(exit);
+
+		return exit;
 	}
 
 	@Bean

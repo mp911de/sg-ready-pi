@@ -15,14 +15,12 @@
  */
 package biz.paluch.sgreadypi.weather;
 
-import lombok.Value;
-
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,11 +29,8 @@ import org.springframework.stereotype.Component;
  * @author Mark Paluch
  */
 @Component
-@Value
 @ConditionalOnProperty(value = "sg.weather.enabled", havingValue = "true")
-class WeatherHealthIndicator implements HealthIndicator {
-
-	WeatherService weatherService;
+record WeatherHealthIndicator(WeatherService weatherService) implements HealthIndicator {
 
 	@Override
 	public Health health() {
