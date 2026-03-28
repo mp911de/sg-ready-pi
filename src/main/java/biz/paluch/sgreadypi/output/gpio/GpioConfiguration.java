@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +37,9 @@ import org.springframework.scheduling.TaskScheduler;
 
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
+import com.pi4j.library.pigpio.PiGpio;
+import com.pi4j.plugin.pigpio.provider.gpio.digital.PiGpioDigitalOutputProvider;
+import com.pi4j.plugin.raspberrypi.platform.RaspberryPiPlatform;
 
 /**
  * GPIO configuration.
@@ -49,13 +51,21 @@ import com.pi4j.context.Context;
 @Import({ GpioConfiguration.RaspberryPi.class })
 public class GpioConfiguration {
 
+	@Bean
 	@ConditionalOnRaspberryPi
-	Context context(SgReadyProperties properties) {
-		return Pi4J.newContextBuilder().autoDetect().enableShutdownHook().build();
+	Context context() {
+
+		PiGpio piGpio = PiGpio.newNativeInstance();
+
+		return Pi4J.newContextBuilder() //
+				.addPlatform(new RaspberryPiPlatform()) //
+				.add(PiGpioDigitalOutputProvider.newInstance(piGpio)) //
+				.build();
 	}
 
+	@Bean
 	@Conditional(NotOnRaspberryPi.class)
-	Context mockContext(SgReadyProperties properties) {
+	Context mockContext() {
 		return Pi4J.newContextBuilder().autoDetect().autoDetectMockPlugins().build();
 	}
 
@@ -77,32 +87,27 @@ public class GpioConfiguration {
 
 		@Bean
 		@ConditionalOnProperty("sg.gpio.rpi3-ch.pin-a")
-		@ConditionalOnBean(Context.class)
 		PiRelHat3Ch piRelHat3Ch(MeterRegistry meterRegistry, Context context, SgReadyProperties properties) {
-
 			GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
-
 			return new PiRelHat3Ch(meterRegistry, context, rpi3Ch.pinA(), rpi3Ch.pinB(), rpi3Ch.pinC());
 		}
 
 		@Bean
-		@ConditionalOnBean(PiRelHat3Ch.class)
 		RelayHealthIndicator relayHealthIndicator(PiRelHat3Ch relay) {
 			return new RelayHealthIndicator(relay);
 		}
 
 		@Bean
-		@ConditionalOnBean(PiRelHat3Ch.class)
 		RelayController relayController(PiRelHat3Ch piRelHat3Ch) {
 			return new RelayController(piRelHat3Ch);
 		}
 
 	}
 
-	static class NotOnRaspberryPi extends NoneNestedConditions {
+	private static class NotOnRaspberryPi extends NoneNestedConditions {
 
 		public NotOnRaspberryPi() {
-			super(ConfigurationPhase.PARSE_CONFIGURATION);
+			super(ConfigurationPhase.REGISTER_BEAN);
 		}
 
 		@ConditionalOnRaspberryPi

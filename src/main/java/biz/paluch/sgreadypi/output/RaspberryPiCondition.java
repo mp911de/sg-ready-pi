@@ -19,6 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+
 import com.pi4j.boardinfo.definition.BoardModel;
 import com.pi4j.boardinfo.model.DetectedBoard;
 import com.pi4j.boardinfo.util.BoardModelDetection;
@@ -39,6 +40,6 @@ class RaspberryPiCondition extends SpringBootCondition {
 			return ConditionOutcome.noMatch("Unknown board");
 		}
 
-		return ConditionOutcome.match("Running on %s".formatted(detectedBoard));
+		return ConditionOutcome.match("Running on %s".formatted(detectedBoard.getBoardModel().getLabel()));
 	}
 }

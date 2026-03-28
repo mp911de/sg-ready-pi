@@ -37,7 +37,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class SgReadyApplication {
 
-	public static int main(String[] args) {
+	public static void main(String[] args) {
 
 		SpringApplication application = new SpringApplication(SgReadyApplication.class);
 
@@ -46,10 +46,12 @@ public class SgReadyApplication {
 		}
 
 		ConfigurableApplicationContext context = application.run(args);
-		int exit = SpringApplication.exit(context, () -> 0);
-		System.exit(exit);
-
-		return exit;
+		try {
+			while (!context.isClosed()) {
+				Thread.sleep(100);
+			}
+		} catch (InterruptedException e) {}
+		System.exit(0);
 	}
 
 	@Bean
