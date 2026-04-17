@@ -115,7 +115,7 @@ public class SgReadyProperties {
 		 * before sunset is cloudy, we know that we won't have enough energy, so we try to start earlier consume excess
 		 * energy.
 		 */
-		Duration desiredExcessDuration = Duration.ofHours(3);
+		Duration desiredExcessDuration = Duration.ofHours(6);
 
 		public GeoPosition getGeoPosition() {
 			return new GeoPosition(latitude, longitude);
