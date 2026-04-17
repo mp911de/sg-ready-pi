@@ -49,4 +49,9 @@ public interface PowerGeneratorService {
 	 */
 	boolean hasData();
 
+	/**
+	 * @return {@code true} if the service is out of service (i.e. degraded state exceeded).
+	 */
+	boolean isOutOfService();
+
 }

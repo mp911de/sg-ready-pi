@@ -15,6 +15,8 @@
  */
 package biz.paluch.sgreadypi;
 
+import java.time.Duration;
+
 import biz.paluch.sgreadypi.provider.Statistics;
 
 import javax.measure.quantity.Power;

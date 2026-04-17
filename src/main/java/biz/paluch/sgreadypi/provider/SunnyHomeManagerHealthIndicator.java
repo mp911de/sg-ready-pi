@@ -15,14 +15,18 @@
  */
 package biz.paluch.sgreadypi.provider;
 
+import biz.paluch.sgreadypi.RecencyTracker;
 import lombok.Value;
 
+import java.time.Duration;
 import java.time.Instant;
 
 import javax.measure.quantity.Power;
 
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.format.annotation.DurationFormat;
+import org.springframework.format.datetime.standard.DurationFormatterUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,10 +50,19 @@ class SunnyHomeManagerHealthIndicator implements HealthIndicator {
 	private void contribute(Health.Builder builder) {
 
 		Instant powerMeterReading = service.getReading();
-		Instant limit = Instant.now().minusSeconds(60);
+		RecencyTracker.HealthState healthState = service.getHealthState();
 
-		if (powerMeterReading.isBefore(limit)) {
-			builder.down().withDetail("power-meter-down-reason", "Reading timeout");
+		if (!healthState.isHealthy()) {
+
+			Duration dataAge = service.dataAge();
+			String message = "Reading timeout (" + DurationFormatterUtils.print(dataAge, DurationFormat.Style.COMPOSITE)
+					+ ")";
+
+			if (healthState.isDegraded()) {
+				builder.outOfService().withDetail("power-meter-down-reason", message);
+			} else {
+				builder.down().withDetail("power-meter-down-reason", message);
+			}
 		}
 
 		Statistics<Power> ingress = service.getIngress();

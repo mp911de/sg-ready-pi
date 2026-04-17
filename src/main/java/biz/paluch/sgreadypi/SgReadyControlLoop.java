@@ -27,9 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.ResolverStyle;
 import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalAmount;
 import java.util.concurrent.TimeUnit;
 
 import javax.measure.Quantity;
@@ -51,13 +49,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Slf4j
 public class SgReadyControlLoop {
 
-	private static DateTimeFormatter DURATION = new DateTimeFormatterBuilder()
-			.appendValue(ChronoField.HOUR_OF_DAY, 2) //
+	private static DateTimeFormatter DURATION = new DateTimeFormatterBuilder().appendValue(ChronoField.HOUR_OF_DAY, 2) //
 			.appendLiteral(':') //
 			.appendValue(ChronoField.MINUTE_OF_HOUR, 2) //
 			.appendLiteral(':') //
 			.appendValue(ChronoField.SECOND_OF_MINUTE, 2) //
 			.toFormatter();
+
+	private static DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("HH:mm (yyyy-MM-dd)");
+
+	private static DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
 	private final PowerGeneratorService inverters;
 
@@ -92,19 +93,32 @@ public class SgReadyControlLoop {
 
 		doWithPower((ingress, generatorPower, soc) -> {
 
+			if (inverters.isOutOfService() || powerMeter.isOutOfService()) {
+				log.warn("Out of service, returning to normal state.");
+				applyDecision(Decision.normal(ConditionOutcome.noMatch("Inverters or power meter out of service")), ingress,
+						generatorPower, soc);
+				return;
+			}
+
 			if (!inverters.hasData() || !powerMeter.hasData()) {
 				log.warn("Skipping control loop iteration. No data available.");
 				return;
 			}
-			Decision decision = createState(this.state, ingress, generatorPower, soc);
-			boolean changed = this.state != decision.state();
 
-			this.state = decision.state();
-			this.decision = decision;
-
-			logState(this.state, ingress, generatorPower, soc, changed);
-			stateConsumer.onState(state);
+			applyDecision(createState(this.state, ingress, generatorPower, soc), ingress, generatorPower, soc);
 		});
+	}
+
+	private void applyDecision(Decision decision, Quantity<Power> ingress, Quantity<Power> generatorPower,
+			Quantity<Dimensionless> soc) {
+
+		boolean changed = this.state != decision.state();
+
+		this.state = decision.state();
+		this.decision = decision;
+
+		logState(this.state, ingress, generatorPower, soc, changed);
+		this.stateConsumer.onState(this.state);
 	}
 
 	SgReadyState createState() {

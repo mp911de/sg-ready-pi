@@ -16,6 +16,7 @@
 package biz.paluch.sgreadypi.provider;
 
 import biz.paluch.sgreadypi.PowerMeter;
+import biz.paluch.sgreadypi.RecencyTracker;
 import io.github.joblo2213.sma.speedwire.Speedwire;
 import io.github.joblo2213.sma.speedwire.protocol.measuringChannels.EnergyMeterChannels;
 import io.github.joblo2213.sma.speedwire.protocol.telegrams.DiscoveryResponse;
@@ -40,7 +41,7 @@ import org.springframework.context.SmartLifecycle;
  * @link <a href="https://www.sma.de/produkte/monitoring-control/sunny-home-manager">Sunny Home Manager 2.0</a>
  */
 @Slf4j
-public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
+public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter, RecencyTracker {
 
 	private static final Duration TIMEOUT = Duration.ofMinutes(1);
 
@@ -129,6 +130,21 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter {
 	@Override
 	public boolean hasData() {
 		return isRunning() && reading.isAfter(Instant.now().minus(TIMEOUT));
+	}
+
+	@Override
+	public Duration dataAge() {
+		if (isRunning() && reading != Instant.MIN) {
+			return Duration.between(reading, Instant.now());
+		}
+		return Duration.ZERO;
+	}
+
+	/**
+	 * @return {@code true} if the service is out of service (i.e. degraded state exceeded).
+	 */
+	public boolean isOutOfService() {
+		return getHealthState().isOutOfService();
 	}
 
 }

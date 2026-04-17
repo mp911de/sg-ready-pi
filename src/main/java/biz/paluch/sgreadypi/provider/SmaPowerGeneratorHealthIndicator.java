@@ -15,7 +15,9 @@
  */
 package biz.paluch.sgreadypi.provider;
 
-import java.time.Instant;
+import biz.paluch.sgreadypi.RecencyTracker;
+
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -23,6 +25,8 @@ import javax.measure.quantity.Power;
 
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.format.annotation.DurationFormat;
+import org.springframework.format.datetime.standard.DurationFormatterUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,17 +46,28 @@ record SmaPowerGeneratorHealthIndicator(SmaPowerGeneratorService powerGenerator)
 
 	private void contribute(Health.Builder builder) {
 
-		Instant limit = Instant.now().minusSeconds(60);
 		Map<String, SmaPowerGeneratorService.InverterState> stateMap = powerGenerator.getStateMap();
 		Map<String, Object> inverters = new LinkedHashMap<>();
 
 		for (SmaPowerGeneratorService.InverterState value : stateMap.values()) {
-			if (value.timestamp().isBefore(limit)) {
-				builder.down().withDetail("inverter-down-reason", "Reading timeout");
+			RecencyTracker.HealthState healthState = value.getHealthState();
+
+			if (!healthState.isHealthy()) {
+
+				Duration dataAge = value.dataAge();
+				String message = "Reading timeout (" + DurationFormatterUtils.print(dataAge, DurationFormat.Style.COMPOSITE)
+						+ ")";
+
+				if (healthState.isDegraded()) {
+					builder.outOfService().withDetail("inverter-down-reason", message);
+				} else {
+					builder.down().withDetail("inverter-down-reason", message);
+				}
 			}
 		}
+
 		if (stateMap.isEmpty()) {
-			builder.down().withDetail("inverter-down-reason", "No readings");
+			builder.outOfService().withDetail("inverter-down-reason", "No readings");
 		}
 
 		Statistics<Power> generatorPower = powerGenerator.getGeneratorPower();

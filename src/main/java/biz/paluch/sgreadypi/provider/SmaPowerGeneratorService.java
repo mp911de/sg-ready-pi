@@ -15,9 +15,10 @@
  */
 package biz.paluch.sgreadypi.provider;
 
-import biz.paluch.sgreadypi.measure.Percent;
 import biz.paluch.sgreadypi.PowerGeneratorService;
+import biz.paluch.sgreadypi.RecencyTracker;
 import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.measure.Percent;
 import biz.paluch.sgreadypi.measure.Watt;
 import cat.joanpujol.smasolar.modbus.ModbusRegister;
 import cat.joanpujol.smasolar.modbus.SmaModbusClient;
@@ -26,6 +27,7 @@ import cat.joanpujol.smasolar.modbus.SmaModbusResponse;
 import lombok.extern.slf4j.Slf4j;
 import tech.units.indriya.unit.Units;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -174,10 +176,27 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 		return !stateMap.isEmpty();
 	}
 
+	@Override
+	public boolean isOutOfService() {
+
+		for (InverterState value : stateMap.values()) {
+			if (value.getHealthState().isOutOfService()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public record InverterState(int currentActivePower, boolean hasBattery, int batteryCharging, int batteryDischarging,
-			int stateOfCharge, Instant timestamp) {
+			int stateOfCharge, Instant timestamp) implements RecencyTracker {
 		public static Quantity<Power> getSolarPower(InverterState state) {
 			return Watt.of(state.currentActivePower() + state.batteryCharging() - Math.abs(state.batteryDischarging()));
+		}
+
+		@Override
+		public Duration dataAge() {
+			return Duration.between(timestamp, Instant.now());
 		}
 	}
 
