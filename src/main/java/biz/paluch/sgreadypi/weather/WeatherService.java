@@ -75,7 +75,8 @@ public class WeatherService {
 
 		LocalDateTime from = enoughRemainingSunHours ? beforeSunsetLimit.minus(properties.getDesiredExcessDuration())
 				: now.minusMinutes(1);
-		return new Range(from, beforeSunsetLimit, afterSunset, afterSunsetLimit, enoughRemainingSunHours, remainingSun);
+		return new Range(from, beforeSunsetLimit, sunset, afterSunset, afterSunsetLimit, enoughRemainingSunHours,
+				remainingSun);
 	}
 
 	private static Duration getRemainingSunDuration(WeatherState weatherState, LocalDateTime now,
@@ -150,7 +151,8 @@ public class WeatherService {
 		return calculator.getSunset(position);
 	}
 
-	public record Range(LocalDateTime from, LocalDateTime to, boolean afterSunset, boolean afterSunsetLimit,
+	public record Range(LocalDateTime from, LocalDateTime to, LocalDateTime sunset, boolean afterSunset,
+			boolean afterSunsetLimit,
 			boolean enoughRemainingSunHours, Duration remainingSunDuration) {
 
 	}

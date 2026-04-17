@@ -158,20 +158,27 @@ public class SgReadyControlLoop {
 
 				WeatherService.Range timeRange = weatherService.getUsableTimeRange();
 
+				String sunset = TIME.format(timeRange.sunset());
 				if (timeRange.enoughRemainingSunHours()) {
 					weather = false;
 					qualifiesForExcessPower = qualifiesForExcessPower
-							.nestedNoMatch(String.format("Enough remaining sunny time %s, starting at %s until %s",
-									format(timeRange.remainingSunDuration()), timeRange.from(), timeRange.to()));
-				} else if (timeRange.afterSunset()) {
-					weather = false;
-					qualifiesForExcessPower = qualifiesForExcessPower.nestedNoMatch("After sunset");
-				} else if (timeRange.afterSunsetLimit()) {
-					weather = false;
-					qualifiesForExcessPower = qualifiesForExcessPower.nestedNoMatch("After sunset limit");
+							.nestedNoMatch("Enough remaining sunny time %s (Sunset: %s), starting at %s until %s".formatted(
+									format(timeRange.remainingSunDuration()), sunset, TIMESTAMP.format(timeRange.from()),
+									TIMESTAMP.format(timeRange.to())));
 				} else {
-					qualifiesForExcessPower = qualifiesForExcessPower
-							.nestedMatch(String.format("Using remaining %s sunny time", format(timeRange.remainingSunDuration())));
+
+					if (timeRange.afterSunset()) {
+						weather = false;
+						qualifiesForExcessPower = qualifiesForExcessPower
+								.nestedNoMatch("After sunset (Sunset: %s)".formatted(sunset));
+					} else if (timeRange.afterSunsetLimit()) {
+						weather = false;
+						qualifiesForExcessPower = qualifiesForExcessPower
+								.nestedNoMatch("After sunset limit (Sunset: %s)".formatted(sunset));
+					} else {
+						qualifiesForExcessPower = qualifiesForExcessPower
+								.nestedMatch(String.format("Using remaining %s sunny time", format(timeRange.remainingSunDuration())));
+					}
 				}
 			}
 
