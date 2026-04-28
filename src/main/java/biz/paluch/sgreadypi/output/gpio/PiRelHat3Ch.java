@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.pi4j.context.Context;
+import com.pi4j.io.gpio.digital.Digital;
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.gpio.digital.DigitalState;
 import com.pi4j.library.pigpio.PiGpioException;
@@ -83,7 +84,6 @@ public class PiRelHat3Ch implements Relay {
 		try {
 			onState(SgReadyState.NORMAL);
 		} catch (PiGpioException ignored) {
-
 		}
 	}
 
@@ -98,13 +98,31 @@ public class PiRelHat3Ch implements Relay {
 
 		this.lastUpdate = now;
 		this.state = state;
-		this.ch1.state(getState(state.a()));
-		this.ch2.state(getState(state.b()));
-		this.ch3.state(getState(state.a() && state.b()));
+		setState(state);
+	}
+
+	@Override
+	public SgReadyState getState() {
+		return SgReadyState.from(getState(this.ch1), getState(this.ch2));
+	}
+
+	@Override
+	public void setState(SgReadyState state) {
+		setState(this.ch1, state.a());
+		setState(this.ch2, state.b());
+		setState(this.ch3, state.a() && state.b());
+	}
+
+	private void setState(DigitalOutput output, boolean state) {
+		output.state(getState(state));
 	}
 
 	private static DigitalState getState(boolean state) {
 		return state ? DigitalState.LOW : DigitalState.HIGH;
+	}
+
+	private static boolean getState(Digital<?, ?, ?> state) {
+		return state.state() == DigitalState.LOW;
 	}
 
 	DigitalOutput getCh1() {

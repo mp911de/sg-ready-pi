@@ -43,25 +43,39 @@ public record SgReadyState(String name, boolean a, boolean b) {
 	 */
 	public static final SgReadyState EXCESS_PV = new SgReadyState("EXCESS_PV", true, true);
 
+	/**
+	 * Create a state from the {@code a} and {@code b} flags.
+	 *
+	 * @param a SG Ready A state.
+	 * @param b SG Ready B state.
+	 * @return the SG Ready state.
+	 */
+	public static SgReadyState from(boolean a, boolean b) {
+		if (a && b) {
+			return EXCESS_PV;
+		}
+		if (a) {
+			return BLOCKED;
+		}
+		if (b) {
+			return AVAILABLE_PV;
+		}
+		return NORMAL;
+	}
+
+	public static SgReadyState valueOf(String value) {
+		return switch (value) {
+			case "BLOCKED" -> BLOCKED;
+			case "NORMAL" -> NORMAL;
+			case "AVAILABLE_PV" -> AVAILABLE_PV;
+			case "EXCESS_PV" -> EXCESS_PV;
+			default -> throw new IllegalArgumentException("Cannot resolve " + value + " to a SgReadyState");
+		};
+
+	}
+
 	@Override
 	public String toString() {
 		return "%s (%s:%s)".formatted(name(), a ? 1 : 0, b ? 1 : 0);
-	}
-
-	public SgReadyState valueOf(String value) {
-
-		switch (value) {
-			case "BLOCKED":
-				return BLOCKED;
-			case "NORMAL":
-				return NORMAL;
-			case "AVAILABLE_PV":
-				return AVAILABLE_PV;
-			case "EXCESS_PV":
-				return EXCESS_PV;
-		}
-
-		throw new IllegalArgumentException("Cannot resolve " + value + " to a SgReadyState");
-
 	}
 }

@@ -66,7 +66,7 @@ class RelayController {
 	}
 
 	@PostMapping("{channel}")
-	public String getState(@PathVariable("channel") int channel, @RequestBody String body) {
+	public String setState(@PathVariable("channel") int channel, @RequestBody String body) {
 
 		DigitalState state = DigitalState.valueOf(body.trim());
 

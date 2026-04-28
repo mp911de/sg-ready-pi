@@ -15,11 +15,26 @@
  */
 package biz.paluch.sgreadypi.output.gpio;
 
+import biz.paluch.sgreadypi.SgReadyState;
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 
 /**
  * Marker interface for relays.
- * 
+ *
  * @author Mark Paluch
  */
-public interface Relay extends SgReadyStateConsumer {}
+public interface Relay extends SgReadyStateConsumer {
+
+	/**
+	 * Return the current {@link SgReadyState}.
+	 */
+	SgReadyState getState();
+
+	/**
+	 * Apply the given {@link SgReadyState}.
+	 *
+	 * @param state the state to apply.
+	 */
+	void setState(SgReadyState state);
+
+}

@@ -39,15 +39,12 @@ public class SgReadyHealthIndicator implements HealthIndicator {
 	public Health health() {
 
 		Health.Builder builder = Health.up();
-
 		builder.withDetail("sg-ready", controller.getState().toString());
-
 		SgReadyControlLoop.Decision decision = controller.getDecision();
 
 		if (decision != null) {
 
 			List<String> conditions = new ArrayList<>();
-
 			SgReadyControlLoop.ConditionOutcome outcome = decision.conditionOutcome();
 
 			while (outcome != null) {
