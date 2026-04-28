@@ -40,11 +40,17 @@ public class ModbusValueReader {
           return null;
         }
       case STR32:
-        var strvalue = from.readBytes(32);
-        int firstNull = strvalue.forEachByte(ByteProcessor.FIND_NUL);
-        if (firstNull == 0) return null;
-        else if (firstNull != -1) return strvalue.slice(0, firstNull).toString(CharsetUtil.UTF_8);
-        else return strvalue.toString(CharsetUtil.UTF_8);
+				int readerIndex = from.readerIndex();
+				int firstNull = from.forEachByte(readerIndex, 32, ByteProcessor.FIND_NUL);
+				String strvalue;
+				if (firstNull == readerIndex) {
+					strvalue = null;
+				} else {
+					int length = firstNull == -1 ? 32 : firstNull - readerIndex;
+					strvalue = from.toString(readerIndex, length, CharsetUtil.UTF_8);
+				}
+				from.skipBytes(32);
+				return strvalue;
       default:
         throw new IllegalArgumentException("Unrecognized " + dataType);
     }

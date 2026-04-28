@@ -1,8 +1,6 @@
 package cat.joanpujol.smasolar.modbus;
 
 import cat.joanpujol.smasolar.error.InvalidDataException;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -25,12 +23,12 @@ public class ModbusDataFormat<T> {
         @Override
         public FirmwareVersion format(Object value) {
           if (value instanceof Number) {
-            var versionAsU32 = Unpooled.copyInt((int) ((Number) value).longValue());
-            var versionHexDump = ByteBufUtil.hexDump(versionAsU32);
+						long versionAsU32 = ((Number) value).longValue() & 0xFFFFFFFFL;
+						var versionHexDump = String.format("%08x", versionAsU32);
             var major = Integer.parseInt(versionHexDump.substring(0, 2));
             var minor = Integer.parseInt(versionHexDump.substring(2, 4));
-            var build = versionAsU32.skipBytes(2).readUnsignedByte();
-            var release = versionAsU32.readUnsignedByte();
+						var build = (int) ((versionAsU32 >>> 8) & 0xFF);
+						var release = (int) (versionAsU32 & 0xFF);
             return new FirmwareVersion(
                 major, minor, build, FirmwareVersion.ReleaseType.fromNumberCode(release));
           } else

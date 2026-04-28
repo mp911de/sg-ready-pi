@@ -67,12 +67,13 @@ public class SmaModbusClient implements ModbusRegisterReader {
     var futureResult = ensureModbusClient().sendRequest(request, unitId);
     return Mono.fromFuture(futureResult)
         .map(
-            response -> {
-              ByteBuf registers = ((ReadInputRegistersResponse) response).getRegisters();
-              var value =
-                  new ModbusValueReader().read(registers, reg.getDataType(), reg.getDataFormat());
-              ReferenceCountUtil.release(response);
-              return value;
+						modbusResponse -> {
+							try {
+								ByteBuf registers = ((ReadInputRegistersResponse) modbusResponse).getRegisters();
+								return new ModbusValueReader().read(registers, reg.getDataType(), reg.getDataFormat());
+							} finally {
+								ReferenceCountUtil.release(modbusResponse);
+							}
             });
   }
 
@@ -108,10 +109,12 @@ public class SmaModbusClient implements ModbusRegisterReader {
     return Mono.fromFuture(futureResult)
         .map(
             modbusResponse -> {
-              ByteBuf registers = ((ReadInputRegistersResponse) modbusResponse).getRegisters();
-              var response = createRequestResponse(request, registers);
-              ReferenceCountUtil.release(response);
-              return response;
+							try {
+								ByteBuf registers = ((ReadInputRegistersResponse) modbusResponse).getRegisters();
+								return createRequestResponse(request, registers);
+							} finally {
+								ReferenceCountUtil.release(modbusResponse);
+							}
             });
   }
 

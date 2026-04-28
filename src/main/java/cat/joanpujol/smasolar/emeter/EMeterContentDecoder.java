@@ -260,12 +260,11 @@ public class EMeterContentDecoder extends MessageToMessageDecoder<DatagramPacket
     boolean accept;
     var buffer = msg.content();
     if (buffer.readableBytes() >= 3) {
-      String smaHeader = buffer.readBytes(3).toString(CharsetUtil.US_ASCII);
+			String smaHeader = buffer.toString(buffer.readerIndex(), 3, CharsetUtil.US_ASCII);
       accept = Objects.equals("SMA", smaHeader);
     } else {
       accept = false;
     }
-    buffer.resetReaderIndex();
     return accept;
   }
 }
