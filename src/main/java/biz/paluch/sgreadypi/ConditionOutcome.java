@@ -43,8 +43,8 @@ public class ConditionOutcome {
 	/**
 	 * Create a {@link ConditionOutcome} for a matching condition including a {@code message}.
 	 *
-	 * @param message
-	 * @return
+	 * @param message the reasoning message.
+	 * @return a matching root outcome.
 	 */
 	public static ConditionOutcome match(String message) {
 		return new ConditionOutcome(null, true, message);
@@ -53,8 +53,8 @@ public class ConditionOutcome {
 	/**
 	 * Create a {@link ConditionOutcome} for a not matching condition including a {@code message}.
 	 *
-	 * @param message
-	 * @return
+	 * @param message the reasoning message.
+	 * @return a non-matching root outcome.
 	 */
 	public static ConditionOutcome noMatch(String message) {
 		return new ConditionOutcome(null, false, message);
@@ -63,31 +63,38 @@ public class ConditionOutcome {
 	/**
 	 * Create a nested {@link ConditionOutcome} for a matching condition including a {@code message}.
 	 *
-	 * @param message
-	 * @return
+	 * @param message the reasoning message.
+	 * @return a matching outcome appended to this trail.
 	 */
 	public ConditionOutcome nestedMatch(String message) {
-		return new ConditionOutcome(this, true, message);
+		return nested(true, message);
 	}
 
 	/**
 	 * Create a nested {@link ConditionOutcome} for a not matching condition including a {@code message}.
 	 *
-	 * @param message
-	 * @return
+	 * @param message the reasoning message.
+	 * @return a non-matching outcome appended to this trail.
 	 */
 	public ConditionOutcome nestedNoMatch(String message) {
-		return new ConditionOutcome(this, false, message);
+		return nested(false, message);
 	}
 
 	/**
-	 * Create a nested {@link ConditionOutcome} for a nested {@link ConditionOutcome}.
+	 * Append another {@link ConditionOutcome} trail to this trail.
 	 *
-	 * @param message
-	 * @return
+	 * @param nested the outcome trail to append.
+	 * @return the combined outcome trail.
 	 */
 	public ConditionOutcome nested(ConditionOutcome nested) {
-		return new ConditionOutcome(this, nested.isMatch(), nested.message);
+
+		ConditionOutcome parent = nested.parent;
+		ConditionOutcome outcome = parent != null ? nested(parent) : this;
+		return outcome.nested(nested.match, nested.message);
+	}
+
+	private ConditionOutcome nested(boolean match, String message) {
+		return new ConditionOutcome(this, match, message);
 	}
 
 	@Nullable

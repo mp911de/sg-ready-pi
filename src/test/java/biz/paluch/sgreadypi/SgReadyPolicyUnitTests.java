@@ -169,6 +169,19 @@ class SgReadyPolicyUnitTests {
 		assertThat(decision.state()).isEqualTo(SgReadyState.EXCESS_PV);
 	}
 
+	@Test
+	void shouldExplainExcessTimeGates() {
+
+		properties.setExcessNotBefore(LocalTime.of(10, 0));
+		properties.setExcessNotAfter(LocalTime.of(14, 0));
+
+		Decision decision = decide(SgReadyState.NORMAL, powered(80));
+
+		assertThat(decision.conditionOutcome().explain()).anySatisfy((entry) -> assertThat(entry).contains("not-before"))
+				.anySatisfy((entry) -> assertThat(entry).contains("not-after"))
+				.anySatisfy((entry) -> assertThat(entry).contains("excess PV stop threshold"));
+	}
+
 	@Test // ADR-0005
 	void shouldFallBackToNormalWhenOutOfService() {
 

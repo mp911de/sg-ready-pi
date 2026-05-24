@@ -45,4 +45,21 @@ class ConditionOutcomeUnitTests {
 				"Did match: SoC above available threshold", //
 				"Did not match: SoC below excess start threshold");
 	}
+
+	@Test
+	void shouldPreserveNestedOutcomeTrail() {
+
+		ConditionOutcome timeGate = ConditionOutcome.match("After not-before").nestedMatch("Before not-after")
+				.nestedNoMatch("SoC below excess stop threshold");
+
+		ConditionOutcome outcome = ConditionOutcome.match("Generator power above consumption").nested(timeGate)
+				.nestedMatch("SoC above available threshold");
+
+		assertThat(outcome.explain()).containsExactly( //
+				"Did match: Generator power above consumption", //
+				"Did match: After not-before", //
+				"Did match: Before not-after", //
+				"Did not match: SoC below excess stop threshold", //
+				"Did match: SoC above available threshold");
+	}
 }
