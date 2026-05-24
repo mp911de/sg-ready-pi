@@ -15,9 +15,6 @@
  */
 package biz.paluch.sgreadypi;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
@@ -41,20 +38,10 @@ public class SgReadyHealthIndicator implements HealthIndicator {
 
 		Health.Builder builder = Health.up();
 		builder.withDetail("sg-ready", controller.getState().toString());
-		SgReadyControlLoop.Decision decision = controller.getDecision();
+		Decision decision = controller.getDecision();
 
 		if (decision != null) {
-
-			List<String> conditions = new ArrayList<>();
-			SgReadyControlLoop.ConditionOutcome outcome = decision.conditionOutcome();
-
-			while (outcome != null) {
-
-				conditions.add(0, ((outcome.isMatch() ? "Did match: " : "Did not match: ") + outcome.getMessage()));
-				outcome = outcome.getParent();
-			}
-
-			builder.withDetail("sg-ready-decision", conditions);
+			builder.withDetail("sg-ready-decision", decision.conditionOutcome().explain());
 		}
 
 		return builder.build();

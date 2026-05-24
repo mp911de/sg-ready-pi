@@ -74,6 +74,18 @@ public class PiRelHat3Ch implements Relay {
 		this.context = context;
 	}
 
+	DigitalOutput getCh1() {
+		return ch1;
+	}
+
+	DigitalOutput getCh2() {
+		return ch2;
+	}
+
+	DigitalOutput getCh3() {
+		return ch3;
+	}
+
 	@PostConstruct
 	public void postConstruct() {
 		onState(SgReadyState.NORMAL);
@@ -83,8 +95,7 @@ public class PiRelHat3Ch implements Relay {
 	public void preDestroy() {
 		try {
 			onState(SgReadyState.NORMAL);
-		} catch (PiGpioException ignored) {
-		}
+		} catch (PiGpioException ignored) {}
 	}
 
 	@Override
@@ -123,18 +134,6 @@ public class PiRelHat3Ch implements Relay {
 
 	private static boolean getState(Digital<?, ?, ?> state) {
 		return state.state() == DigitalState.LOW;
-	}
-
-	DigitalOutput getCh1() {
-		return ch1;
-	}
-
-	DigitalOutput getCh2() {
-		return ch2;
-	}
-
-	DigitalOutput getCh3() {
-		return ch3;
 	}
 
 }

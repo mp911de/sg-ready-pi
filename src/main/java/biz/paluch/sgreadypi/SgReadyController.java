@@ -17,17 +17,18 @@ package biz.paluch.sgreadypi;
 
 import biz.paluch.sgreadypi.output.gpio.Relay;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * REST controller exposing and overriding the current SG Ready state.
@@ -57,18 +58,8 @@ public class SgReadyController {
 		state.put("a", sgReady.a());
 		state.put("b", sgReady.b());
 
-		SgReadyControlLoop.Decision decision = controller.getDecision();
-		List<String> conditions = new ArrayList<>();
-
-		if (decision != null) {
-			SgReadyControlLoop.ConditionOutcome outcome = decision.conditionOutcome();
-			while (outcome != null) {
-				conditions.addFirst(((outcome.isMatch() ? "Did match: " : "Did not match: ") + outcome.getMessage()));
-				outcome = outcome.getParent();
-			}
-		}
-
-		state.put("decision", conditions);
+		Decision decision = controller.getDecision();
+		state.put("decision", decision != null ? decision.conditionOutcome().explain() : List.of());
 		return state;
 	}
 
@@ -84,16 +75,27 @@ public class SgReadyController {
 
 	@PostMapping("a")
 	public void setA(@RequestBody String body) {
-		if (StringUtils.hasText(body)) {
-			relay.setState(SgReadyState.from(Boolean.getBoolean(body), relay.getState().b()));
-		}
+		relay.setState(SgReadyState.from(parseBoolean(body), relay.getState().b()));
 	}
 
 	@PostMapping("b")
 	public void setB(@RequestBody String body) {
+		relay.setState(SgReadyState.from(relay.getState().a(), parseBoolean(body)));
+	}
+
+	private static boolean parseBoolean(String body) {
+
 		if (StringUtils.hasText(body)) {
-			relay.setState(SgReadyState.from(relay.getState().a(), Boolean.getBoolean(body)));
+			String value = body.trim();
+			if ("true".equalsIgnoreCase(value)) {
+				return true;
+			}
+			if ("false".equalsIgnoreCase(value)) {
+				return false;
+			}
 		}
+
+		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Expected request body to be 'true' or 'false'");
 	}
 
 	public SgReadyControlLoop getController() {

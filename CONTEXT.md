@@ -89,13 +89,27 @@ A time-based suppression of rapid state changes, applied on top of **Hysteresis*
 limit physical relay wear. _Avoid_: throttle, cooldown
 
 **Decision**:
-The control loop's output: the chosen **SG Ready State** together with a chain of
+The **SG Ready Policy**'s output: the chosen **SG Ready State** together with a chain of
 **Condition Outcomes** explaining how it was reached. _Avoid_: result, verdict
 
 **Condition Outcome**:
 One match/no-match step (with a human-readable message) in the reasoning chain behind a
 **Decision**; outcomes nest to form an explanation trail surfaced in the health endpoint.
 _Avoid_: rule result, check
+
+**SG Ready Policy**:
+The pure function that maps a snapshot of **Conditions** (with the current **SG Ready
+State**, the weather **Usable Time Range**, and configuration) to a **Decision**. It holds
+every state-selection rule — ingress limit, **Generator Power** gate, **Levels** /
+**Hysteresis**, time-of-day gating, weather deferral, and the **Out of Service**
+fallback — and performs no I/O; the control loop resolves the inputs and feeds them in.
+Modelled by
+`SgReadyPolicy`. _Avoid_: decision engine, decider, rules engine, strategy
+
+**Conditions**:
+The snapshot of sensed inputs a **Decision** is made from: **Ingress**, **Generator
+Power**, **State of Charge**, and whether any input is **Out of Service**. _Avoid_:
+readings, inputs, power readings, sensor state
 
 ### Weather optimisation
 
@@ -147,6 +161,10 @@ offline, unhealthy
   **Generator Power**. The first two are sources/devices; **Generator Power** is a
   measured quantity (solar surplus). Prefer the full term, never bare "power", when the
   distinction matters.
+- **Conditions vs. Condition Outcome.** **Conditions** is the snapshot of sensed inputs
+  fed *into* the **SG Ready Policy**; a **Condition Outcome** is a match/no-match step in
+  the reasoning trail that comes *out* of it. They sit on opposite sides of a
+  **Decision** — never use one where you mean the other.
 
 ## Example dialogue
 

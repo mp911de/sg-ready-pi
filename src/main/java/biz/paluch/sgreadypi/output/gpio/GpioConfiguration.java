@@ -27,14 +27,18 @@ import java.util.List;
 import org.slf4j.Logger;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.util.StringUtils;
 
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
@@ -52,6 +56,9 @@ import com.pi4j.plugin.raspberrypi.platform.RaspberryPiPlatform;
 public class GpioConfiguration {
 
 	private static final Logger log = org.slf4j.LoggerFactory.getLogger(GpioConfiguration.class);
+	private static final String GPIO_RPI3_CH_PIN_A = "sg.gpio.rpi3-ch.pin-a";
+	private static final String GPIO_RPI3_CH_PIN_B = "sg.gpio.rpi3-ch.pin-b";
+	private static final String GPIO_RPI3_CH_PIN_C = "sg.gpio.rpi3-ch.pin-c";
 
 	@Bean
 	@ConditionalOnRaspberryPi
@@ -71,6 +78,12 @@ public class GpioConfiguration {
 		return Pi4J.newContextBuilder().autoDetect().autoDetectMockPlugins().build();
 	}
 
+	@Bean
+	@Conditional(MissingRelayPins.class)
+	Relay noOpRelay() {
+		return new NoOpRelay();
+	}
+
 	/**
 	 * Debouncer to avoid relay wear due to hysteresis.
 	 */
@@ -85,10 +98,10 @@ public class GpioConfiguration {
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	@Conditional(RelayPinsConfigured.class)
 	static class RaspberryPi {
 
 		@Bean
-		@ConditionalOnProperty("sg.gpio.rpi3-ch.pin-a")
 		PiRelHat3Ch piRelHat3Ch(MeterRegistry meterRegistry, Context context, SgReadyProperties properties) {
 			GpioProperties.Rpi3Ch rpi3Ch = properties.getGpio().rpi3Ch();
 			return new PiRelHat3Ch(meterRegistry, context, rpi3Ch.pinA(), rpi3Ch.pinB(), rpi3Ch.pinC());
@@ -116,6 +129,30 @@ public class GpioConfiguration {
 		static class OnRaspberryPi {
 
 		}
+	}
+
+	static class RelayPinsConfigured implements Condition {
+
+		@Override
+		public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+			return hasRelayPins(context.getEnvironment());
+		}
+
+	}
+
+	static class MissingRelayPins implements Condition {
+
+		@Override
+		public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+			return !hasRelayPins(context.getEnvironment());
+		}
+
+	}
+
+	private static boolean hasRelayPins(Environment environment) {
+		return StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_A))
+				&& StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_B))
+				&& StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_C));
 	}
 
 }

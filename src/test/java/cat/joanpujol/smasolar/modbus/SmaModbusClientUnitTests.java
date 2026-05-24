@@ -15,18 +15,20 @@
  */
 package cat.joanpujol.smasolar.modbus;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
+
+import io.netty.buffer.Unpooled;
+
+import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
 
 import com.digitalpetri.modbus.master.ModbusTcpMaster;
 import com.digitalpetri.modbus.master.ModbusTcpMasterConfig;
 import com.digitalpetri.modbus.requests.ModbusRequest;
 import com.digitalpetri.modbus.requests.ReadInputRegistersRequest;
-import com.digitalpetri.modbus.responses.ReadInputRegistersResponse;
 import com.digitalpetri.modbus.responses.ModbusResponse;
-import io.netty.buffer.Unpooled;
-import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.Test;
+import com.digitalpetri.modbus.responses.ReadInputRegistersResponse;
 
 class SmaModbusClientUnitTests {
 
@@ -60,7 +62,7 @@ class SmaModbusClientUnitTests {
 		assertThat(registers.refCnt()).isZero();
 	}
 
-	private static final class TestSmaModbusClient extends SmaModbusClient {
+	private static class TestSmaModbusClient extends SmaModbusClient {
 		private final ModbusTcpMaster master;
 
 		private TestSmaModbusClient(CompletableFuture<? extends ModbusResponse> responseFuture) {
@@ -74,7 +76,7 @@ class SmaModbusClientUnitTests {
 		}
 	}
 
-	private static final class StubModbusTcpMaster extends ModbusTcpMaster {
+	private static class StubModbusTcpMaster extends ModbusTcpMaster {
 		private final CompletableFuture<? extends ModbusResponse> responseFuture;
 
 		private StubModbusTcpMaster(CompletableFuture<? extends ModbusResponse> responseFuture) {

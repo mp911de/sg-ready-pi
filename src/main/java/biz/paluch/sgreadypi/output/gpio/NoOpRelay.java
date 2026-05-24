@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package biz.paluch.sgreadypi.weather;
+package biz.paluch.sgreadypi.output.gpio;
 
-import java.time.Clock;
-
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
-import org.springframework.boot.restclient.RestTemplateBuilder;
+import biz.paluch.sgreadypi.SgReadyState;
 
 /**
+ * In-memory {@link Relay} used when no GPIO relay pins are configured.
+ *
  * @author Mark Paluch
  */
-@Disabled
-class WeatherClientIntegrationTests {
+class NoOpRelay implements Relay {
 
-	@Test
-	void apiCall() {
+	private volatile SgReadyState state = SgReadyState.NORMAL;
 
-		WeatherClient client = new WeatherClient(new RestTemplateBuilder(), Clock.systemDefaultZone());
-		WeatherState weatherState = client.getWeatherState(new GeoPosition(53.4138213, 7.1646956));
+	@Override
+	public void onState(SgReadyState state) {
+		setState(state);
+	}
 
-		System.out.println(weatherState);
+	@Override
+	public SgReadyState getState() {
+		return state;
+	}
+
+	@Override
+	public void setState(SgReadyState state) {
+		this.state = state;
 	}
 
 }

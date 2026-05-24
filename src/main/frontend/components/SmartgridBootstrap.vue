@@ -69,6 +69,71 @@
 <script>
 import axios from "axios";
 
+const defaultHealth = () => ({
+  "status": "?",
+  components: {
+    debounce: {
+      details: {
+        "current": "",
+        "next": "",
+        "next-update": "",
+        "last-update": "",
+        "synchronized": true
+      }
+    },
+    smaPowerGenerator: {
+      details: {
+        "generator-power": "",
+        "generator-power-momentary": "",
+        "battery-soc": "",
+      }
+    },
+    sunnyHomeManager: {
+      details: {
+        "ingress": "",
+        "ingress-momentary": "",
+        "egress": "",
+        "egress-momentary": "",
+      }
+    },
+    sgReady: {
+      details: {
+        "sg-ready-decision": [],
+      }
+    }
+  }
+});
+
+const normalizeHealth = (data) => {
+  const fallback = defaultHealth();
+  const response = data || {};
+  const components = response.components || {};
+  const normalized = {};
+
+  Object.keys(fallback.components).forEach((name) => {
+    const fallbackComponent = fallback.components[name];
+    const component = components[name] || {};
+
+    normalized[name] = {
+      ...fallbackComponent,
+      ...component,
+      details: {
+        ...fallbackComponent.details,
+        ...(component.details || {})
+      }
+    };
+  });
+
+  return {
+    ...fallback,
+    ...response,
+    components: {
+      ...components,
+      ...normalized
+    }
+  };
+};
+
 export default {
   methods: {
 
@@ -109,11 +174,7 @@ export default {
 
     async getHealth() {
       const {data} = await axios.get("/actuator/health");
-
-      if (!data.components.debounce) {
-        data.components.debounce = {};
-      }
-      this.health = data;
+      this.health = normalizeHealth(data);
     },
 
     async updateRelayState(channel) {
@@ -126,6 +187,13 @@ export default {
       });
       await this.getRelayStates()
     },
+
+    stopHealthPolling() {
+      if (this.interval) {
+        clearInterval(this.interval)
+        this.interval = undefined
+      }
+    },
   },
 
   data() {
@@ -137,40 +205,7 @@ export default {
         "2": "",
         "3": ""
       },
-      health: {
-        "status": "?",
-        components: {
-          debounce: {
-            details: {
-              "current": "",
-              "next": "",
-              "next-update": "",
-              "last-update": "",
-              "synchronized": true
-            }
-          },
-          smaPowerGenerator: {
-            details: {
-              "generator-power": "",
-              "generator-power-momentary": "",
-              "battery-soc": "",
-            }
-          },
-          sunnyHomeManager: {
-            details: {
-              "ingress": "",
-              "ingress-momentary": "",
-              "egress": "",
-              "egress-momentary": "",
-            }
-          },
-          sgReady: {
-            details: {
-              "sg-ready-decision": [],
-            }
-          }
-        }
-      }
+      health: defaultHealth()
     };
   },
 
@@ -185,11 +220,12 @@ export default {
     this.getRelayStates();
   }
   ,
+  beforeUnmount() {
+    this.stopHealthPolling();
+  }
+  ,
   beforeDestroy() {
-    if (this.interval) {
-      clearIntervall(this.interval)
-      this.interval = undefined
-    }
+    this.stopHealthPolling();
   }
   ,
 }

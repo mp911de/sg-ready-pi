@@ -20,44 +20,27 @@ import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import biz.paluch.sgreadypi.weather.WeatherService;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
 import java.util.concurrent.TimeUnit;
-
-import javax.measure.Quantity;
-import javax.measure.quantity.Dimensionless;
-import javax.measure.quantity.Power;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import org.springframework.scheduling.annotation.Scheduled;
 
 /**
- * Controller to determine the SG ready state. State is determined by power availability using
- * {@link SgReadyState#AVAILABLE_PV}. Once the available power reaches the battery charging limits then the state
- * switches to {@link SgReadyState#EXCESS_PV} to ensure consumption by the heater.
+ * Control loop that drives the SG Ready state. It resolves the current {@link Conditions} from the power generator and
+ * power meter, fetches the weather {@link WeatherService.Range Range} when weather optimisation is enabled, and hands
+ * everything to the pure {@link SgReadyPolicy} which returns the {@link Decision}. The loop is the I/O shell; all
+ * state-selection rules live in the policy.
  *
  * @author Mark Paluch
  */
 public class SgReadyControlLoop {
 
-	private static final Logger log = org.slf4j.LoggerFactory.getLogger(SgReadyControlLoop.class);
-	private static DateTimeFormatter DURATION = new DateTimeFormatterBuilder().appendValue(ChronoField.HOUR_OF_DAY, 2) //
-			.appendLiteral(':') //
-			.appendValue(ChronoField.MINUTE_OF_HOUR, 2) //
-			.appendLiteral(':') //
-			.appendValue(ChronoField.SECOND_OF_MINUTE, 2) //
-			.toFormatter();
-
-	private static DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("HH:mm (yyyy-MM-dd)");
-
-	private static DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+	private static final Logger log = LoggerFactory.getLogger(SgReadyControlLoop.class);
 
 	private final PowerGeneratorService inverters;
 
@@ -71,7 +54,10 @@ public class SgReadyControlLoop {
 
 	private final Clock clock;
 
+	private final SgReadyPolicy policy;
+
 	private volatile SgReadyState state = SgReadyState.NORMAL;
+
 	private volatile @Nullable Decision decision;
 
 	public SgReadyControlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
@@ -82,6 +68,15 @@ public class SgReadyControlLoop {
 		this.properties = properties;
 		this.weatherService = weatherService;
 		this.clock = clock;
+		this.policy = new SgReadyPolicy(properties);
+	}
+
+	public SgReadyState getState() {
+		return state;
+	}
+
+	public @Nullable Decision getDecision() {
+		return decision;
 	}
 
 	/**
@@ -90,368 +85,56 @@ public class SgReadyControlLoop {
 	@Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
 	public void control() {
 
-		doWithPower((ingress, generatorPower, soc) -> {
+		Conditions conditions = readConditions();
 
-			if (inverters.isOutOfService() || powerMeter.isOutOfService()) {
-				log.warn("Out of service, returning to normal state.");
-				applyDecision(Decision.normal(ConditionOutcome.noMatch("Inverters or power meter out of service")), ingress,
-						generatorPower, soc);
-				return;
-			}
+		if (conditions.outOfService()) {
+			log.warn("Out of service, returning to normal state.");
+		} else if (!inverters.hasData() || !powerMeter.hasData()) {
+			log.warn("Skipping control loop iteration. No data available.");
+			return;
+		}
 
-			if (!inverters.hasData() || !powerMeter.hasData()) {
-				log.warn("Skipping control loop iteration. No data available.");
-				return;
-			}
-
-			applyDecision(createState(this.state, ingress, generatorPower, soc), ingress, generatorPower, soc);
-		});
+		applyDecision(decide(conditions), conditions);
 	}
 
-	private void applyDecision(Decision decision, Quantity<Power> ingress, Quantity<Power> generatorPower,
-			Quantity<Dimensionless> soc) {
+	private void applyDecision(Decision decision, Conditions conditions) {
 
 		boolean changed = this.state != decision.state();
 
 		this.state = decision.state();
 		this.decision = decision;
 
-		logState(this.state, ingress, generatorPower, soc, changed);
+		logState(this.state, conditions, changed);
 		this.stateConsumer.onState(this.state);
 	}
 
-	SgReadyState createState() {
-		return decide().state();
-	}
+	private Decision decide(Conditions conditions) {
 
-	Decision decide() {
+		SgReadyProperties.Weather weather = properties.getWeather();
+		WeatherService.Range weatherRange = weather != null && weather.isEnabled() && !conditions.outOfService()
+				? weatherService.getUsableTimeRange()
+				: null;
 
-		Quantity<Power> generatorPower = inverters.getGeneratorPower().getAverage();
-		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
-		Quantity<Power> ingress = powerMeter.getIngress().getAverage();
-
-		return createState(this.state, ingress, generatorPower, soc);
-	}
-
-	private Decision createState(SgReadyState currentState, Quantity<Power> ingress, Quantity<Power> generatorPower,
-			Quantity<Dimensionless> soc) {
-
-		if (gte(ingress, properties.getIngressLimit())) {
-			// apply state
-			return Decision.normal(
-					ConditionOutcome.match("Ingress %s exceeds limit %s".formatted(ingress, properties.getIngressLimit())));
-		}
-
-		if (gte(generatorPower, properties.getHeatPumpPowerConsumption())) {
-
-			ConditionOutcome match = ConditionOutcome.match("Generator power %s above heat pump consumption %s"
-					.formatted(generatorPower, properties.getHeatPumpPowerConsumption()));
-
-			SgReadyProperties.Levels battery = properties.getBattery();
-			ConditionOutcome qualifiesForExcessPower = match.nested(
-					qualifiesForExcessPower(battery, properties.getExcessNotBefore(), properties.getExcessNotAfter(), soc));
-			boolean excess = qualifiesForExcessPower.isMatch();
-			boolean weather = true;
-
-			SgReadyProperties.Weather weatherProperties = properties.getWeather();
-			if (weatherProperties != null && weatherProperties.isEnabled()) {
-
-				WeatherService.Range timeRange = weatherService.getUsableTimeRange();
-
-				String sunset = TIME.format(timeRange.sunset());
-				if (timeRange.enoughRemainingSunHours()) {
-					weather = false;
-					qualifiesForExcessPower = qualifiesForExcessPower
-							.nestedNoMatch("Enough remaining sunny time %s (Sunset: %s), starting at %s until %s".formatted(
-									format(timeRange.remainingSunDuration()), sunset, TIMESTAMP.format(timeRange.from()),
-									TIMESTAMP.format(timeRange.to())));
-				} else {
-
-					if (timeRange.afterSunset()) {
-						weather = false;
-						qualifiesForExcessPower = qualifiesForExcessPower
-								.nestedNoMatch("After sunset (Sunset: %s)".formatted(sunset));
-					} else if (timeRange.afterSunsetLimit()) {
-						weather = false;
-						qualifiesForExcessPower = qualifiesForExcessPower
-								.nestedNoMatch("After sunset limit (Sunset: %s)".formatted(sunset));
-					} else {
-						qualifiesForExcessPower = qualifiesForExcessPower
-								.nestedMatch(String.format("Using remaining %s sunny time", format(timeRange.remainingSunDuration())));
-					}
-				}
-			}
-
-			if (excess && weather) {
-
-				if (gte(soc, battery.pvExcessOn())) {
-					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
-							"Battery SoC %s above SoC for excess PV start threshold %s %%".formatted(soc, battery.pvExcessOn())));
-				}
-
-				if (currentState == SgReadyState.NORMAL) {
-					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Battery SoC %s below SoC for excess PV start threshold %s %%, switching from normal to available"
-									.formatted(soc, battery.pvExcessOn())));
-				}
-
-				return new Decision(currentState,
-						qualifiesForExcessPower.nestedMatch("Battery SoC %s SoC retaining %s".formatted(soc, currentState)));
-			} else if (gte(soc, battery.pvAvailable())) {
-				return Decision.availablePv(qualifiesForExcessPower
-						.nestedMatch("Battery SoC %s above required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
-			} else {
-				return Decision.normal(qualifiesForExcessPower
-						.nestedNoMatch("Battery SoC %s below required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
-			}
-		}
-
-		return Decision.normal(ConditionOutcome.noMatch("Generator power below heat pump consumption"));
-	}
-
-	static String format(Duration duration) {
-		return DURATION.format(duration.addTo(LocalTime.of(0, 0)));
-	}
-
-	private ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
-			@Nullable LocalTime excessNotBefore, @Nullable LocalTime excessNotAfter, Quantity<Dimensionless> soc) {
-
-		ConditionOutcome outcome = null;
-		LocalDateTime now = LocalDateTime.now(clock);
-
-		if (excessNotBefore != null) {
-
-			if (now.toLocalTime().isBefore(excessNotBefore)) {
-				return ConditionOutcome.noMatch("Current time %s before excess power is allowed %s (not-before)"
-						.formatted(now.toLocalTime(), excessNotBefore));
-			} else {
-				outcome = ConditionOutcome.match("Current time %s after excess power is allowed %s (not-before)"
-						.formatted(now.toLocalTime(), excessNotBefore));
-			}
-		}
-
-		if (excessNotAfter != null) {
-
-			ConditionOutcome notAfter;
-			if (now.toLocalTime().isAfter(excessNotAfter)) {
-				notAfter = ConditionOutcome.noMatch("Current time %s after excess power is allowed %s (not-after)"
-						.formatted(now.toLocalTime(), excessNotAfter));
-			} else {
-				notAfter = ConditionOutcome.match("Current time %s after excess power is allowed %s (not-after)"
-						.formatted(now.toLocalTime(), excessNotAfter));
-			}
-
-			outcome = outcome == null ? notAfter : outcome.nested(notAfter);
-			if (!notAfter.isMatch()) {
-				return outcome;
-			}
-		}
-
-		ConditionOutcome socBelowPvExcessOff = gte(soc, battery.pvExcessOff())
-				? ConditionOutcome
-						.match("Battery SoC %s above SoC for excess PV stop threshold %s %%".formatted(soc, battery.pvExcessOff()))
-				: ConditionOutcome.noMatch(
-						"Battery SoC %s below SoC for excess PV stop threshold %s %%".formatted(soc, battery.pvExcessOff()));
-
-		return outcome == null ? socBelowPvExcessOff : outcome.nested(socBelowPvExcessOff);
+		return policy.decide(this.state, conditions, weatherRange, LocalDateTime.now(clock));
 	}
 
 	/**
-	 * Notify {@link PowerConsumer} with current power state readings and run the function it defines.
-	 *
-	 * @param consumer the consumer to invoke with the current readings.
+	 * Read the current {@link Conditions} from the power generator and power meter.
 	 */
-	private void doWithPower(PowerConsumer consumer) {
-
-		Quantity<Power> generatorPower = inverters.getGeneratorPower().getAverage();
-		Quantity<Power> ingress = powerMeter.getIngress().getAverage();
-		Quantity<Dimensionless> soc = inverters.getBatteryStateOfCharge();
-
-		consumer.apply(ingress, generatorPower, soc);
+	private Conditions readConditions() {
+		return new Conditions(powerMeter.getIngress().getAverage(), inverters.getGeneratorPower().getAverage(),
+				inverters.getBatteryStateOfCharge(), inverters.isOutOfService() || powerMeter.isOutOfService());
 	}
 
 	/**
-	 * Log the current state and readings, at {@code INFO} when the state changed and {@code DEBUG} otherwise.
-	 *
-	 * @param state the current SG Ready state.
-	 * @param ingress the current grid ingress.
-	 * @param pv the current generator power.
-	 * @param soc the current battery state of charge.
-	 * @param changed whether the state changed in this iteration.
+	 * Log state.
 	 */
-	private void logState(SgReadyState state, Quantity<Power> ingress, Quantity<Power> pv, Quantity<Dimensionless> soc,
-			boolean changed) {
+	private void logState(SgReadyState state, Conditions conditions, boolean changed) {
 
 		Level level = changed ? Level.INFO : Level.DEBUG;
 		if (log.isEnabledForLevel(level)) {
-			log.atLevel(level).log(String.format("SG Ready: %s, Ingress %s, PV %s, SoC %s", state, ingress, pv, soc));
-		}
-	}
-
-	/**
-	 * Greater-than-or-equal comparison of two quantities by numeric value.
-	 *
-	 * @param <Q> the quantity type.
-	 * @param a the left-hand quantity.
-	 * @param b the right-hand quantity.
-	 * @return {@literal true} if {@code a >= b}; {@literal false} otherwise.
-	 */
-	static <Q extends Quantity<Q>> boolean gte(Quantity<Q> a, Quantity<Q> b) {
-		return a.getValue().doubleValue() >= b.getValue().doubleValue();
-	}
-
-	/**
-	 * Less-than-or-equal comparison of two quantities by numeric value.
-	 *
-	 * @param <Q> the quantity type.
-	 * @param a the left-hand quantity.
-	 * @param b the right-hand quantity.
-	 * @return {@literal true} if {@code a <= b}; {@literal false} otherwise.
-	 */
-	static <Q extends Quantity<Q>> boolean lte(Quantity<Q> a, Quantity<Q> b) {
-		return a.getValue().doubleValue() <= b.getValue().doubleValue();
-	}
-
-	public SgReadyState getState() {
-		return this.state;
-	}
-
-	public @Nullable Decision getDecision() {
-		return this.decision;
-	}
-
-	/**
-	 * Consumer for power values.
-	 */
-	interface PowerConsumer {
-
-		void apply(Quantity<Power> ingress, Quantity<Power> generatorPower, Quantity<Dimensionless> soc);
-	}
-
-	/**
-	 * Outcome for a condition match, including log message.
-	 */
-	static class ConditionOutcome {
-
-		private final @Nullable ConditionOutcome parent;
-
-		private final boolean match;
-
-		private final String message;
-
-		private ConditionOutcome(@Nullable ConditionOutcome parent, boolean match, String message) {
-			this.parent = parent;
-			this.match = match;
-			this.message = message;
-		}
-
-		/**
-		 * Create a {@link ConditionOutcome} for a matching condition including a {@code message}.
-		 *
-		 * @param message the human-readable explanation of the match.
-		 * @return a matching outcome with no parent.
-		 */
-		public static ConditionOutcome match(String message) {
-			return new ConditionOutcome(null, true, message);
-		}
-
-		/**
-		 * Create a {@link ConditionOutcome} for a not matching condition including a {@code message}.
-		 *
-		 * @param message the human-readable explanation of the no-match.
-		 * @return a non-matching outcome with no parent.
-		 */
-		public static ConditionOutcome noMatch(String message) {
-			return new ConditionOutcome(null, false, message);
-		}
-
-		/**
-		 * Create a nested {@link ConditionOutcome} for a matching condition including a {@code message}.
-		 *
-		 * @param message the human-readable explanation of the match.
-		 * @return a matching outcome chained to this one.
-		 */
-		public ConditionOutcome nestedMatch(String message) {
-			return new ConditionOutcome(this, true, message);
-		}
-
-		/**
-		 * Create a nested {@link ConditionOutcome} for a not matching condition including a {@code message}.
-		 *
-		 * @param message the human-readable explanation of the no-match.
-		 * @return a non-matching outcome chained to this one.
-		 */
-		public ConditionOutcome nestedNoMatch(String message) {
-			return new ConditionOutcome(this, false, message);
-		}
-
-		/**
-		 * Wrap the given {@code nested} outcome as a child of this outcome, inheriting its match result.
-		 *
-		 * @param nested the child outcome to attach.
-		 * @return a new outcome chained to this one.
-		 */
-		public ConditionOutcome nested(ConditionOutcome nested) {
-			return new ConditionOutcome(this, nested.isMatch(), nested.message);
-		}
-
-		public @Nullable ConditionOutcome getParent() {
-			return parent;
-		}
-
-		public boolean isMatch() {
-			return match;
-		}
-
-		public String getMessage() {
-			return message;
-		}
-
-		@Override
-		public String toString() {
-
-			StringBuilder builder = new StringBuilder();
-
-			if (parent != null) {
-				builder.append(parent).append(" -> ");
-			}
-
-			builder.append(isMatch() ? "Match" : "No match").append(": ").append(getMessage());
-
-			return builder.toString();
-		}
-	}
-
-	record Decision(SgReadyState state, ConditionOutcome conditionOutcome) {
-
-		/**
-		 * A decision resulting in {@link SgReadyState#NORMAL}.
-		 *
-		 * @param outcome the reasoning behind the decision.
-		 * @return a decision for the normal state.
-		 */
-		static Decision normal(ConditionOutcome outcome) {
-			return new Decision(SgReadyState.NORMAL, outcome);
-		}
-
-		/**
-		 * A decision resulting in {@link SgReadyState#AVAILABLE_PV}.
-		 *
-		 * @param outcome the reasoning behind the decision.
-		 * @return a decision for the available-PV state.
-		 */
-		static Decision availablePv(ConditionOutcome outcome) {
-			return new Decision(SgReadyState.AVAILABLE_PV, outcome);
-		}
-
-		/**
-		 * A decision resulting in {@link SgReadyState#EXCESS_PV}.
-		 *
-		 * @param outcome the reasoning behind the decision.
-		 * @return a decision for the excess-PV state.
-		 */
-		static Decision excessPv(ConditionOutcome outcome) {
-			return new Decision(SgReadyState.EXCESS_PV, outcome);
+			log.atLevel(level).log(String.format("SG Ready: %s, Ingress %s, PV %s, SoC %s", state, conditions.ingress(),
+					conditions.generatorPower(), conditions.soc()));
 		}
 	}
 
