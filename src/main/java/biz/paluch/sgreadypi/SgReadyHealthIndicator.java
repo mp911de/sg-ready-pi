@@ -15,8 +15,6 @@
  */
 package biz.paluch.sgreadypi;
 
-import lombok.Value;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,10 +28,13 @@ import org.springframework.stereotype.Component;
  * @author Mark Paluch
  */
 @Component
-@Value
 public class SgReadyHealthIndicator implements HealthIndicator {
 
-	SgReadyControlLoop controller;
+	private final SgReadyControlLoop controller;
+
+	public SgReadyHealthIndicator(SgReadyControlLoop controller) {
+		this.controller = controller;
+	}
 
 	@Override
 	public Health health() {
@@ -59,4 +60,11 @@ public class SgReadyHealthIndicator implements HealthIndicator {
 		return builder.build();
 	}
 
+	public SgReadyControlLoop getController() {
+		return this.controller;
+	}
+
+	public String toString() {
+		return "SgReadyHealthIndicator(controller=" + this.getController() + ")";
+	}
 }

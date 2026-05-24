@@ -15,8 +15,6 @@
  */
 package biz.paluch.sgreadypi.output.gpio;
 
-import lombok.Value;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,10 +36,13 @@ import com.pi4j.io.gpio.digital.DigitalState;
  */
 @RestController
 @RequestMapping("api/relay")
-@Value
 class RelayController {
 
-	PiRelHat3Ch relay;
+	private final PiRelHat3Ch relay;
+
+	public RelayController(PiRelHat3Ch relay) {
+		this.relay = relay;
+	}
 
 	@GetMapping()
 	public Map<String, String> getState() {
@@ -78,6 +79,10 @@ class RelayController {
 			case 3 -> relay.getCh3().state(state).state().name();
 			default -> throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 		};
+	}
+
+	public PiRelHat3Ch getRelay() {
+		return this.relay;
 	}
 
 }

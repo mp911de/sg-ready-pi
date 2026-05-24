@@ -46,7 +46,7 @@ public class EMeterConfig {
     this.eventLoopGroup = eventLoopGroup;
   }
 
-  public static final class Builder {
+	public static class Builder {
     private InetSocketAddress address;
     private String multicastOutputInterface;
     private EventLoopGroup eventLoopGroup;

@@ -18,8 +18,6 @@ package biz.paluch.sgreadypi;
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import biz.paluch.sgreadypi.weather.WeatherService;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -34,9 +32,10 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 
 /**
@@ -46,9 +45,9 @@ import org.springframework.scheduling.annotation.Scheduled;
  *
  * @author Mark Paluch
  */
-@Slf4j
 public class SgReadyControlLoop {
 
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(SgReadyControlLoop.class);
 	private static DateTimeFormatter DURATION = new DateTimeFormatterBuilder().appendValue(ChronoField.HOUR_OF_DAY, 2) //
 			.appendLiteral(':') //
 			.appendValue(ChronoField.MINUTE_OF_HOUR, 2) //
@@ -72,8 +71,8 @@ public class SgReadyControlLoop {
 
 	private final Clock clock;
 
-	@Getter private volatile SgReadyState state = SgReadyState.NORMAL;
-	@Getter private volatile Decision decision;
+	private volatile SgReadyState state = SgReadyState.NORMAL;
+	private volatile @Nullable Decision decision;
 
 	public SgReadyControlLoop(PowerGeneratorService inverters, SunnyHomeManagerService powerMeter,
 			SgReadyStateConsumer stateConsumer, SgReadyProperties properties, WeatherService weatherService, Clock clock) {
@@ -154,7 +153,8 @@ public class SgReadyControlLoop {
 			boolean excess = qualifiesForExcessPower.isMatch();
 			boolean weather = true;
 
-			if (properties.getWeather().isEnabled()) {
+			SgReadyProperties.Weather weatherProperties = properties.getWeather();
+			if (weatherProperties != null && weatherProperties.isEnabled()) {
 
 				WeatherService.Range timeRange = weatherService.getUsableTimeRange();
 
@@ -312,6 +312,14 @@ public class SgReadyControlLoop {
 		return a.getValue().doubleValue() <= b.getValue().doubleValue();
 	}
 
+	public SgReadyState getState() {
+		return this.state;
+	}
+
+	public @Nullable Decision getDecision() {
+		return this.decision;
+	}
+
 	/**
 	 * Consumer for power values.
 	 */
@@ -387,8 +395,7 @@ public class SgReadyControlLoop {
 			return new ConditionOutcome(this, nested.isMatch(), nested.message);
 		}
 
-		@Nullable
-		public ConditionOutcome getParent() {
+		public @Nullable ConditionOutcome getParent() {
 			return parent;
 		}
 

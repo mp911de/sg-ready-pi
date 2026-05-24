@@ -23,6 +23,7 @@ import java.util.Set;
 import javax.measure.Quantity;
 import javax.measure.Unit;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.TypeDescriptor;
@@ -44,13 +45,13 @@ public class QuantityConverter implements ConditionalGenericConverter {
 	}
 
 	@Override
-	public Set<ConvertiblePair> getConvertibleTypes() {
+	public @Nullable Set<ConvertiblePair> getConvertibleTypes() {
 		return null;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+	public @Nullable Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
 
 		if (source == null) {
 			return null;

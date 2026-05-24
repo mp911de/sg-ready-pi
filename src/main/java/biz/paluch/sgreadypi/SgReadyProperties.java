@@ -19,7 +19,6 @@ import biz.paluch.sgreadypi.measure.Percent;
 import biz.paluch.sgreadypi.measure.Watt;
 import biz.paluch.sgreadypi.output.gpio.GpioProperties;
 import biz.paluch.sgreadypi.weather.GeoPosition;
-import lombok.Data;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -29,8 +28,9 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.lang.Nullable;
 
 /**
  * Configuration properties for the SG Ready control application.
@@ -38,7 +38,7 @@ import org.springframework.lang.Nullable;
  * @author Mark Paluch
  */
 @ConfigurationProperties(prefix = "sg")
-@Data
+@SuppressWarnings("NullAway.Init") // fields are populated by Spring configuration property binding
 public class SgReadyProperties {
 
 	/**
@@ -105,7 +105,122 @@ public class SgReadyProperties {
 	/**
 	 * Weather-based optimization configuration.
 	 */
-	Weather weather;
+	@Nullable Weather weather;
+
+	public SgReadyProperties() {}
+
+	public long getPowerMeterId() {
+		return this.powerMeterId;
+	}
+
+	public List<String> getInverterHosts() {
+		return this.inverterHosts;
+	}
+
+	public int getInverterPort() {
+		return this.inverterPort;
+	}
+
+	public Duration getQueryInterval() {
+		return this.queryInterval;
+	}
+
+	public Duration getAveraging() {
+		return this.averaging;
+	}
+
+	public Quantity<Power> getHeatPumpPowerConsumption() {
+		return this.heatPumpPowerConsumption;
+	}
+
+	public Quantity<Power> getIngressLimit() {
+		return this.ingressLimit;
+	}
+
+	public @Nullable LocalTime getExcessNotBefore() {
+		return this.excessNotBefore;
+	}
+
+	public @Nullable LocalTime getExcessNotAfter() {
+		return this.excessNotAfter;
+	}
+
+	public Levels getBattery() {
+		return this.battery;
+	}
+
+	public GpioProperties getGpio() {
+		return this.gpio;
+	}
+
+	public Duration getDebounce() {
+		return this.debounce;
+	}
+
+	public @Nullable Weather getWeather() {
+		return this.weather;
+	}
+
+	public void setPowerMeterId(long powerMeterId) {
+		this.powerMeterId = powerMeterId;
+	}
+
+	public void setInverterHosts(List<String> inverterHosts) {
+		this.inverterHosts = inverterHosts;
+	}
+
+	public void setInverterPort(int inverterPort) {
+		this.inverterPort = inverterPort;
+	}
+
+	public void setQueryInterval(Duration queryInterval) {
+		this.queryInterval = queryInterval;
+	}
+
+	public void setAveraging(Duration averaging) {
+		this.averaging = averaging;
+	}
+
+	public void setHeatPumpPowerConsumption(Quantity<Power> heatPumpPowerConsumption) {
+		this.heatPumpPowerConsumption = heatPumpPowerConsumption;
+	}
+
+	public void setIngressLimit(Quantity<Power> ingressLimit) {
+		this.ingressLimit = ingressLimit;
+	}
+
+	public void setExcessNotBefore(@Nullable LocalTime excessNotBefore) {
+		this.excessNotBefore = excessNotBefore;
+	}
+
+	public void setExcessNotAfter(@Nullable LocalTime excessNotAfter) {
+		this.excessNotAfter = excessNotAfter;
+	}
+
+	public void setBattery(Levels battery) {
+		this.battery = battery;
+	}
+
+	public void setGpio(GpioProperties gpio) {
+		this.gpio = gpio;
+	}
+
+	public void setDebounce(Duration debounce) {
+		this.debounce = debounce;
+	}
+
+	public void setWeather(@Nullable Weather weather) {
+		this.weather = weather;
+	}
+
+	public String toString() {
+		return "SgReadyProperties(powerMeterId=" + this.getPowerMeterId() + ", inverterHosts=" + this.getInverterHosts()
+				+ ", inverterPort=" + this.getInverterPort() + ", queryInterval=" + this.getQueryInterval() + ", averaging="
+				+ this.getAveraging() + ", heatPumpPowerConsumption=" + this.getHeatPumpPowerConsumption() + ", ingressLimit="
+				+ this.getIngressLimit() + ", excessNotBefore=" + this.getExcessNotBefore() + ", excessNotAfter="
+				+ this.getExcessNotAfter() + ", battery=" + this.getBattery() + ", gpio=" + this.getGpio() + ", debounce="
+				+ this.getDebounce() + ", weather=" + this.getWeather() + ")";
+	}
 
 	/**
 	 * @param pvAvailable Battery state of Charge indicating unused PV energy. Used to recommend heat pump temperature
@@ -122,8 +237,7 @@ public class SgReadyProperties {
 	/**
 	 * Configuration properties to configure weather-based predications considering the sun position.
 	 */
-	@Data
-	public static final class Weather {
+	public static class Weather {
 
 		private boolean enabled = false;
 		private double latitude;
@@ -138,8 +252,56 @@ public class SgReadyProperties {
 		 */
 		Duration desiredExcessDuration = Duration.ofHours(3);
 
+		public Weather() {}
+
 		public GeoPosition getGeoPosition() {
 			return new GeoPosition(latitude, longitude);
+		}
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
+		public double getLatitude() {
+			return this.latitude;
+		}
+
+		public double getLongitude() {
+			return this.longitude;
+		}
+
+		public Duration getNotBeforeSunset() {
+			return this.notBeforeSunset;
+		}
+
+		public Duration getDesiredExcessDuration() {
+			return this.desiredExcessDuration;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public void setLatitude(double latitude) {
+			this.latitude = latitude;
+		}
+
+		public void setLongitude(double longitude) {
+			this.longitude = longitude;
+		}
+
+		public void setNotBeforeSunset(Duration notBeforeSunset) {
+			this.notBeforeSunset = notBeforeSunset;
+		}
+
+		public void setDesiredExcessDuration(Duration desiredExcessDuration) {
+			this.desiredExcessDuration = desiredExcessDuration;
+		}
+
+		public String toString() {
+			return "SgReadyProperties.Weather(enabled=" + this.isEnabled() + ", latitude=" + this.getLatitude()
+					+ ", longitude=" + this.getLongitude() + ", notBeforeSunset=" + this.getNotBeforeSunset()
+					+ ", desiredExcessDuration=" + this.getDesiredExcessDuration() + ")";
 		}
 	}
 

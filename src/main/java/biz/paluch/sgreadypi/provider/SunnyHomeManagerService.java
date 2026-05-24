@@ -21,8 +21,6 @@ import io.github.joblo2213.sma.speedwire.Speedwire;
 import io.github.joblo2213.sma.speedwire.protocol.measuringChannels.EnergyMeterChannels;
 import io.github.joblo2213.sma.speedwire.protocol.telegrams.DiscoveryResponse;
 import io.github.joblo2213.sma.speedwire.protocol.telegrams.EnergyMeterTelegram;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import tech.units.indriya.unit.Units;
 
 import java.io.IOException;
@@ -32,6 +30,9 @@ import java.time.Instant;
 import javax.measure.Quantity;
 import javax.measure.quantity.Power;
 
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+
 import org.springframework.context.SmartLifecycle;
 
 /**
@@ -40,18 +41,18 @@ import org.springframework.context.SmartLifecycle;
  * @author Mark Paluch
  * @see <a href="https://www.sma.de/produkte/monitoring-control/sunny-home-manager">Sunny Home Manager 2.0</a>
  */
-@Slf4j
 public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter, RecencyTracker {
 
 	private static final Duration TIMEOUT = Duration.ofMinutes(1);
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(SunnyHomeManagerService.class);
 
-	private Speedwire speedwire;
+	private @Nullable Speedwire speedwire;
 	private final long powerMeterId;
 
 	private MutableStatistics<Power> ingress;
 	private MutableStatistics<Power> egress;
 
-	@Getter protected volatile Instant reading = Instant.MIN;
+	protected volatile Instant reading = Instant.MIN;
 
 	public SunnyHomeManagerService(long powerMeterId, Duration averaging) {
 		this.powerMeterId = powerMeterId;
@@ -149,4 +150,7 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter, Rece
 		return getHealthState().isOutOfService();
 	}
 
+	public Instant getReading() {
+		return this.reading;
+	}
 }

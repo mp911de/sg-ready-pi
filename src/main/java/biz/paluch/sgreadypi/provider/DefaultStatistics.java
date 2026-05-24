@@ -22,6 +22,8 @@ import java.time.Duration;
 import javax.measure.Quantity;
 import javax.measure.Unit;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Default {@link MutableStatistics} backed by a moving {@link Average}.
  *
@@ -32,7 +34,7 @@ class DefaultStatistics<Q extends Quantity<Q>> implements MutableStatistics<Q> {
 	private final Average average;
 	private final Unit<Q> unit;
 
-	private volatile Quantity<Q> mostRecent;
+	private volatile @Nullable Quantity<Q> mostRecent;
 
 	public DefaultStatistics(Duration duration, Unit<Q> unit) {
 		average = new Average(duration);

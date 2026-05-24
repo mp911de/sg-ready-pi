@@ -24,7 +24,6 @@ import cat.joanpujol.smasolar.modbus.ModbusRegister;
 import cat.joanpujol.smasolar.modbus.SmaModbusClient;
 import cat.joanpujol.smasolar.modbus.SmaModbusRequest;
 import cat.joanpujol.smasolar.modbus.SmaModbusResponse;
-import lombok.extern.slf4j.Slf4j;
 import tech.units.indriya.unit.Units;
 
 import java.time.Duration;
@@ -41,6 +40,9 @@ import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Power;
 
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+
 import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
@@ -49,9 +51,9 @@ import org.springframework.scheduling.TaskScheduler;
  *
  * @author Mark Paluch
  */
-@Slf4j
 public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorService {
 
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(SmaPowerGeneratorService.class);
 	private final AtomicBoolean running = new AtomicBoolean(false);
 
 	private final Map<String, SmaModbusClient> clients = new LinkedHashMap<>();
@@ -61,7 +63,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	private final SgReadyProperties properties;
 	private final TaskScheduler executorService;
-	private volatile ScheduledFuture<?> schedule;
+	private volatile @Nullable ScheduledFuture<?> schedule;
 
 	private final Supplier<SmaModbusRequest> requestFactory = () -> new SmaModbusRequest.Builder(
 			SmaModbusRequest.Type.READ).addRegister(ModbusRegister.CURRENT_ACTIVE_POWER)

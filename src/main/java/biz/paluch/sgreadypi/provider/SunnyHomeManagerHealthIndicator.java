@@ -16,7 +16,6 @@
 package biz.paluch.sgreadypi.provider;
 
 import biz.paluch.sgreadypi.RecencyTracker;
-import lombok.Value;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -35,10 +34,13 @@ import org.springframework.stereotype.Component;
  * @author Mark Paluch
  */
 @Component
-@Value
 class SunnyHomeManagerHealthIndicator implements HealthIndicator {
 
-	SunnyHomeManagerService service;
+	private final SunnyHomeManagerService service;
+
+	public SunnyHomeManagerHealthIndicator(SunnyHomeManagerService service) {
+		this.service = service;
+	}
 
 	@Override
 	public Health health() {
@@ -73,6 +75,10 @@ class SunnyHomeManagerHealthIndicator implements HealthIndicator {
 		builder.withDetail("ingress-momentary", ingress.getMostRecent().toString());
 		builder.withDetail("egress", egress.getAverage().toString());
 		builder.withDetail("egress-momentary", egress.getMostRecent().toString());
+	}
+
+	public SunnyHomeManagerService getService() {
+		return this.service;
 	}
 
 }

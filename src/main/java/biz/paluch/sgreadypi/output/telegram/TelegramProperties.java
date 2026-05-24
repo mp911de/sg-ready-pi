@@ -15,18 +15,17 @@
  */
 package biz.paluch.sgreadypi.output.telegram;
 
-import lombok.Data;
-
 import java.util.Locale;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for Telegram notifications.
- * 
+ *
  * @author Mark Paluch
  */
 @ConfigurationProperties(prefix = "sg.telegram")
-@Data
+@SuppressWarnings("NullAway.Init") // fields are populated by Spring configuration property binding
 public class TelegramProperties {
 
 	private String token;
@@ -34,4 +33,35 @@ public class TelegramProperties {
 	private long chatId;
 
 	private Locale locale = Locale.getDefault();
+
+	public TelegramProperties() {}
+
+	public String getToken() {
+		return this.token;
+	}
+
+	public long getChatId() {
+		return this.chatId;
+	}
+
+	public Locale getLocale() {
+		return this.locale;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
+
+	public void setChatId(long chatId) {
+		this.chatId = chatId;
+	}
+
+	public void setLocale(Locale locale) {
+		this.locale = locale;
+	}
+
+	public String toString() {
+		return "TelegramProperties(token=" + this.getToken() + ", chatId=" + this.getChatId() + ", locale="
+				+ this.getLocale() + ")";
+	}
 }

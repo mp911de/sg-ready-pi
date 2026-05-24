@@ -1,7 +1,11 @@
 package cat.joanpujol.smasolar.modbus;
 
 import cat.joanpujol.smasolar.error.UnnexpectedCodition;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class SmaModbusRequest {
   public enum Type {
@@ -95,7 +99,7 @@ public class SmaModbusRequest {
     else throw new IndexOutOfBoundsException("This request hasn't any registers");
   }
 
-  public static final class Builder {
+	public static class Builder {
     private Integer unitId;
     private List<ModbusRegister> registers = new ArrayList<>();
     private Type requestType;

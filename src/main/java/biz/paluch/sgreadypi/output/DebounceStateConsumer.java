@@ -16,22 +16,24 @@
 package biz.paluch.sgreadypi.output;
 
 import biz.paluch.sgreadypi.SgReadyState;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+
 import org.springframework.scheduling.TaskScheduler;
 
 /**
  * Debouncing {@link SgReadyStateConsumer} to avoid state flickering and reduce wear on the output.
- * 
+ *
  * @author Mark Paluch
  */
-@Slf4j
 public class DebounceStateConsumer implements SgReadyStateConsumer {
 
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(DebounceStateConsumer.class);
 	private final SgReadyStateConsumer delegate;
 
 	private final TaskScheduler scheduler;

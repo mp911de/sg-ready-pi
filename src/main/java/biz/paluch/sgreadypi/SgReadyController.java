@@ -16,7 +16,6 @@
 package biz.paluch.sgreadypi;
 
 import biz.paluch.sgreadypi.output.gpio.Relay;
-import lombok.Value;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -37,12 +36,16 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("api/sg-ready")
-@Value
 public class SgReadyController {
 
-	SgReadyControlLoop controller;
+	private final SgReadyControlLoop controller;
 
-	Relay relay;
+	private final Relay relay;
+
+	public SgReadyController(SgReadyControlLoop controller, Relay relay) {
+		this.controller = controller;
+		this.relay = relay;
+	}
 
 	@GetMapping
 	public Map<String, Object> getState() {
@@ -91,6 +94,14 @@ public class SgReadyController {
 		if (StringUtils.hasText(body)) {
 			relay.setState(SgReadyState.from(relay.getState().a(), Boolean.getBoolean(body)));
 		}
+	}
+
+	public SgReadyControlLoop getController() {
+		return this.controller;
+	}
+
+	public Relay getRelay() {
+		return this.relay;
 	}
 
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
 
@@ -41,8 +42,8 @@ class WeatherClient {
 	private final RestTemplate restTemplate;
 	private final Clock clock;
 
-	private volatile WeatherState cached;
-	private volatile Instant lastUpdate;
+	private volatile @Nullable WeatherState cached;
+	private volatile @Nullable Instant lastUpdate;
 
 	public WeatherClient(RestTemplateBuilder builder, Clock clock) {
 		this.restTemplate = builder.build();
@@ -75,6 +76,10 @@ class WeatherClient {
 
 		Map<String, Double> uriVariables = Map.of("latitude", position.latitude(), "longitude", position.longitude());
 		WeatherResponse response = restTemplate.getForObject(API_URL, WeatherResponse.class, uriVariables);
+
+		if (response == null) {
+			throw new IllegalStateException("No weather response received from " + API_URL);
+		}
 
 		ZoneId zone = clock.getZone();
 		ZoneId responseZone = TimeZone.getTimeZone(response.getTimeZone()).toZoneId();

@@ -15,8 +15,6 @@
  */
 package biz.paluch.sgreadypi.weather;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Mark Paluch
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Data
+@SuppressWarnings("NullAway.Init") // fields are populated by Jackson deserialization
 class WeatherResponse {
 
 	@JsonProperty("timezone_abbreviation") String timeZone;
@@ -37,6 +35,38 @@ class WeatherResponse {
 	CurrentWeather current;
 
 	HourlyWeather hourly;
+
+	public WeatherResponse() {}
+
+	public String getTimeZone() {
+		return this.timeZone;
+	}
+
+	public CurrentWeather getCurrent() {
+		return this.current;
+	}
+
+	public HourlyWeather getHourly() {
+		return this.hourly;
+	}
+
+	@JsonProperty("timezone_abbreviation")
+	public void setTimeZone(String timeZone) {
+		this.timeZone = timeZone;
+	}
+
+	public void setCurrent(CurrentWeather current) {
+		this.current = current;
+	}
+
+	public void setHourly(HourlyWeather hourly) {
+		this.hourly = hourly;
+	}
+
+	public String toString() {
+		return "WeatherResponse(timeZone=" + this.getTimeZone() + ", current=" + this.getCurrent() + ", hourly="
+				+ this.getHourly() + ")";
+	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	static class CurrentWeather {

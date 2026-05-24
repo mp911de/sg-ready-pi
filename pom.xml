@@ -39,9 +39,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
 		</dependency>
 
 		<dependency>
@@ -131,6 +130,25 @@
 			</resource>
 		</resources>
 		<plugins>
+			<plugin>
+				<groupId>am.ik.maven</groupId>
+				<artifactId>nullability-maven-plugin</artifactId>
+				<version>0.4.0</version>
+				<extensions>true</extensions>
+				<configuration>
+					<requireExplicitNullMarkingSeverity>off
+					</requireExplicitNullMarkingSeverity>
+					<jspecifyMode>true</jspecifyMode>
+					<excludedPaths>.*/cat/joanpujol/.*</excludedPaths>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>configure</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 
 			<plugin>
 				<groupId>com.github.eirslett</groupId>
@@ -170,14 +188,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 
 			<plugin>

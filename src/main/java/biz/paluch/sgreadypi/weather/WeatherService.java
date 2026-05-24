@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
@@ -38,9 +39,9 @@ public class WeatherService {
 	// cloud coverage in percent
 	private static final int MAX_ACCEPTABLE_CLOUD_COVERAGE = 60;
 
-	private final SgReadyProperties.Weather properties;
+	private final SgReadyProperties.@Nullable Weather properties;
 	private final Clock clock;
-	private final GeoPosition position;
+	private final @Nullable GeoPosition position;
 	private final WeatherClient client;
 	private final SunPositionCalculator calculator;
 
@@ -49,7 +50,7 @@ public class WeatherService {
 		this(properties.getWeather(), new WeatherClient(builder, clock), clock);
 	}
 
-	WeatherService(SgReadyProperties.Weather properties, WeatherClient weatherClient, Clock clock) {
+	WeatherService(SgReadyProperties.@Nullable Weather properties, WeatherClient weatherClient, Clock clock) {
 		this.properties = properties;
 		this.clock = clock;
 		this.position = this.properties != null ? this.properties.getGeoPosition() : null;
@@ -64,6 +65,7 @@ public class WeatherService {
 	 */
 	public Range getUsableTimeRange() {
 
+		SgReadyProperties.Weather properties = requireProperties();
 		WeatherState weatherState = getWeatherState();
 		LocalDateTime sunset = getSunset();
 		LocalDateTime now = LocalDateTime.now(clock);
@@ -151,7 +153,7 @@ public class WeatherService {
 	 * @return the weather state; never {@literal null}.
 	 */
 	public WeatherState getWeatherState() {
-		return client.getWeatherState(position);
+		return client.getWeatherState(requirePosition());
 	}
 
 	/**
@@ -160,7 +162,26 @@ public class WeatherService {
 	 * @return the local sunset date-time; never {@literal null}.
 	 */
 	public LocalDateTime getSunset() {
-		return calculator.getSunset(position);
+		return calculator.getSunset(requirePosition());
+	}
+
+	private SgReadyProperties.Weather requireProperties() {
+
+		SgReadyProperties.Weather properties = this.properties;
+		if (properties == null) {
+			throw new IllegalStateException("Weather optimization is not configured (requires sg.weather)");
+		}
+		return properties;
+	}
+
+	private GeoPosition requirePosition() {
+
+		GeoPosition position = this.position;
+		if (position == null) {
+			throw new IllegalStateException(
+					"Weather optimization is not configured (requires sg.weather.latitude/longitude)");
+		}
+		return position;
 	}
 
 	/**

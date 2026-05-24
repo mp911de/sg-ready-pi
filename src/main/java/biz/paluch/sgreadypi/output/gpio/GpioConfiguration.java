@@ -21,9 +21,10 @@ import biz.paluch.sgreadypi.output.ConditionalOnRaspberryPi;
 import biz.paluch.sgreadypi.output.DebounceStateConsumer;
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+
+import org.slf4j.Logger;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,9 +48,10 @@ import com.pi4j.plugin.raspberrypi.platform.RaspberryPiPlatform;
  * @author Mark Paluch
  */
 @Configuration(proxyBeanMethods = false)
-@Slf4j
 @Import({ GpioConfiguration.RaspberryPi.class })
 public class GpioConfiguration {
+
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(GpioConfiguration.class);
 
 	@Bean
 	@ConditionalOnRaspberryPi

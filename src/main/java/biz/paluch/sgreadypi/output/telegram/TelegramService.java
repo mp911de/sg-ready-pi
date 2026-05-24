@@ -19,17 +19,19 @@ import biz.paluch.sgreadypi.PowerGeneratorService;
 import biz.paluch.sgreadypi.PowerMeter;
 import biz.paluch.sgreadypi.SgReadyState;
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
-import biz.paluch.sgreadypi.provider.SunnyHomeManagerService;
 import jakarta.annotation.PreDestroy;
-import lombok.extern.slf4j.Slf4j;
 
-import javax.measure.Quantity;
-import javax.measure.quantity.Dimensionless;
-import javax.measure.quantity.Power;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+
+import javax.measure.Quantity;
+import javax.measure.quantity.Dimensionless;
+import javax.measure.quantity.Power;
+
+import org.slf4j.Logger;
+
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -37,16 +39,16 @@ import com.pengrad.telegrambot.response.SendResponse;
 
 /**
  * {@link SgReadyStateConsumer} sending Telegram notifications to a specified chatId.
- * 
+ *
  * @author Mark Paluch
  */
-@Slf4j
 public class TelegramService implements SgReadyStateConsumer {
 
 	private static final Map<SgReadyState, String> ICONS = Map.of(SgReadyState.BLOCKED, "🛑",
 			SgReadyState.NORMAL, "🔌",
 			SgReadyState.AVAILABLE_PV, "⚡️",
 			SgReadyState.EXCESS_PV, "🔋");
+	private static final Logger log = org.slf4j.LoggerFactory.getLogger(TelegramService.class);
 
 	private final TelegramBot bot;
 	private final long chatId;
@@ -81,7 +83,8 @@ public class TelegramService implements SgReadyStateConsumer {
 		String stateName = resourceBundle.getString("state." + state.name());
 		String messageTemplate = resourceBundle.getString("message");
 		Formatter formatter = new Formatter(this.locale);
-		String message = formatter.format(messageTemplate, ICONS.get(state), stateName, ingress, generatorPower, soc).toString();
+		String message = formatter.format(messageTemplate, ICONS.get(state), stateName, ingress, generatorPower, soc)
+				.toString();
 
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
