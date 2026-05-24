@@ -107,7 +107,7 @@ public class SgReadyProperties {
 		private boolean enabled = false;
 		private double latitude;
 		private double longitude;
-		private Duration notBeforeSunset = Duration.ofMinutes((2 * 60) + 30);
+		private Duration notBeforeSunset = Duration.ofHours(1).plus(Duration.ofMinutes(30));
 
 		/**
 		 * Duration of {@link SgReadyState#EXCESS_PV} that we want to consume depending on weather predictions. The default
@@ -115,7 +115,7 @@ public class SgReadyProperties {
 		 * before sunset is cloudy, we know that we won't have enough energy, so we try to start earlier consume excess
 		 * energy.
 		 */
-		Duration desiredExcessDuration = Duration.ofHours(6);
+		Duration desiredExcessDuration = Duration.ofHours(3);
 
 		public GeoPosition getGeoPosition() {
 			return new GeoPosition(latitude, longitude);
