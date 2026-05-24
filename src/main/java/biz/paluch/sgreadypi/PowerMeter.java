@@ -15,8 +15,6 @@
  */
 package biz.paluch.sgreadypi;
 
-import java.time.Duration;
-
 import biz.paluch.sgreadypi.provider.Statistics;
 
 import javax.measure.quantity.Power;
@@ -29,17 +27,23 @@ import javax.measure.quantity.Power;
 public interface PowerMeter {
 
 	/**
-	 * @return power ingress from an external power grid.
+	 * Return ingress statistics, the power drawn from the external grid.
+	 *
+	 * @return ingress power statistics; never {@literal null}.
 	 */
 	Statistics<Power> getIngress();
 
 	/**
-	 * @return power egress to an external power grid.
+	 * Return egress statistics, the power fed into the external grid.
+	 *
+	 * @return egress power statistics; never {@literal null}.
 	 */
 	Statistics<Power> getEgress();
 
 	/**
-	 * @return {@code true} if the service is alive and has recent data.
+	 * Return whether the meter is alive and holds recent data.
+	 *
+	 * @return {@literal true} if recent data is available; {@literal false} otherwise.
 	 */
 	boolean hasData();
 

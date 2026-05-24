@@ -24,6 +24,13 @@ import javax.measure.Quantity;
  */
 public interface Statistics<Q extends Quantity<Q>> {
 
+	/**
+	 * Create constant statistics whose average and most-recent value are both {@code q}.
+	 *
+	 * @param <Q> the quantity type.
+	 * @param q the fixed value to report.
+	 * @return statistics that always return {@code q}.
+	 */
 	static <Q extends Quantity<Q>> Statistics<Q> just(Quantity<Q> q) {
 		return new Statistics<>() {
 			@Override

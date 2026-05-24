@@ -50,10 +50,10 @@ class WeatherClient {
 	}
 
 	/**
-	 * Obtain the weather state for a given {@link GeoPosition}.
+	 * Obtain the weather state for a given {@link GeoPosition}, served from a one-hour cache.
 	 *
-	 * @param position
-	 * @return
+	 * @param position the geographic position to query.
+	 * @return the cached or freshly fetched weather state.
 	 */
 	public WeatherState getWeatherState(GeoPosition position) {
 

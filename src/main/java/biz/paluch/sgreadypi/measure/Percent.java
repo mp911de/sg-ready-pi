@@ -31,17 +31,19 @@ public class Percent {
 	private static final Quantity<Dimensionless> ZERO = of(0);
 
 	/**
-	 * Create Quantity from percentage {@code value}.
+	 * Create a dimensionless percentage {@link Quantity} from the given {@code value}.
 	 *
-	 * @param value percentage value.
-	 * @return
+	 * @param value the percentage value, for example {@code 80} for 80%.
+	 * @return the percentage quantity.
 	 */
 	public static Quantity<Dimensionless> of(int value) {
 		return Quantities.getQuantity(value, Units.PERCENT);
 	}
 
 	/**
-	 * @return zero percent quantity.
+	 * Return a cached zero-percent quantity.
+	 *
+	 * @return the zero-percent quantity; never {@literal null}.
 	 */
 	public static Quantity<Dimensionless> zero() {
 		return ZERO;

@@ -58,7 +58,9 @@ public class WeatherService {
 	}
 
 	/**
-	 * @return the time range that can be used to consume the sun.
+	 * Determine the usable time range during which excess solar power should be consumed.
+	 *
+	 * @return the usable time range; never {@literal null}.
 	 */
 	public Range getUsableTimeRange() {
 
@@ -143,14 +145,36 @@ public class WeatherService {
 		return result;
 	}
 
+	/**
+	 * Return the current weather state for the configured position.
+	 *
+	 * @return the weather state; never {@literal null}.
+	 */
 	public WeatherState getWeatherState() {
 		return client.getWeatherState(position);
 	}
 
+	/**
+	 * Return the sunset time for the configured position.
+	 *
+	 * @return the local sunset date-time; never {@literal null}.
+	 */
 	public LocalDateTime getSunset() {
 		return calculator.getSunset(position);
 	}
 
+	/**
+	 * The time window in which excess solar power may be consumed, with the sun-related boundaries and flags used to
+	 * reach the decision.
+	 *
+	 * @param from the start of the usable window.
+	 * @param to the end of the usable window, that is the not-before-sunset limit.
+	 * @param sunset the calculated sunset time.
+	 * @param afterSunset whether the current time is already past sunset.
+	 * @param afterSunsetLimit whether the current time is already past the not-before-sunset limit.
+	 * @param enoughRemainingSunHours whether enough sunny time remains to cover the desired excess duration.
+	 * @param remainingSunDuration the forecast sunny time remaining until the sunset limit.
+	 */
 	public record Range(LocalDateTime from, LocalDateTime to, LocalDateTime sunset, boolean afterSunset,
 			boolean afterSunsetLimit,
 			boolean enoughRemainingSunHours, Duration remainingSunDuration) {

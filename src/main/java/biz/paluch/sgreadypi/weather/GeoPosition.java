@@ -16,6 +16,10 @@
 package biz.paluch.sgreadypi.weather;
 
 /**
+ * A geographic position expressed as decimal degrees.
+ *
+ * @param latitude the latitude in decimal degrees.
+ * @param longitude the longitude in decimal degrees.
  * @author Mark Paluch
  */
 public record GeoPosition(double latitude, double longitude) {

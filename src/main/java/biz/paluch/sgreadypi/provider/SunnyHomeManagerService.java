@@ -38,7 +38,7 @@ import org.springframework.context.SmartLifecycle;
  * {@link PowerMeter} implementation for Sunny Home Manager 2.0.
  *
  * @author Mark Paluch
- * @link <a href="https://www.sma.de/produkte/monitoring-control/sunny-home-manager">Sunny Home Manager 2.0</a>
+ * @see <a href="https://www.sma.de/produkte/monitoring-control/sunny-home-manager">Sunny Home Manager 2.0</a>
  */
 @Slf4j
 public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter, RecencyTracker {
@@ -141,7 +141,9 @@ public class SunnyHomeManagerService implements SmartLifecycle, PowerMeter, Rece
 	}
 
 	/**
-	 * @return {@code true} if the service is out of service (i.e. degraded state exceeded).
+	 * Return whether the power meter is out of service because its data age exceeded the threshold.
+	 *
+	 * @return {@literal true} if out of service; {@literal false} otherwise.
 	 */
 	public boolean isOutOfService() {
 		return getHealthState().isOutOfService();

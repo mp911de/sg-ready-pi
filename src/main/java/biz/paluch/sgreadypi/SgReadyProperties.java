@@ -51,10 +51,19 @@ public class SgReadyProperties {
 	 */
 	List<String> inverterHosts;
 
+	/**
+	 * Modbus TCP port used to query the inverters.
+	 */
 	int inverterPort = 502;
 
+	/**
+	 * Interval at which inverters are polled for new readings.
+	 */
 	Duration queryInterval = Duration.ofSeconds(10);
 
+	/**
+	 * Moving-average window applied to power readings to smooth out spikes.
+	 */
 	Duration averaging = Duration.ofSeconds(300);
 
 	/**
@@ -78,12 +87,24 @@ public class SgReadyProperties {
 	 */
 	@Nullable LocalTime excessNotAfter;
 
+	/**
+	 * Battery state-of-charge thresholds that gate state transitions.
+	 */
 	Levels battery = new Levels(Percent.of(20), Percent.of(80), Percent.of(60));
 
+	/**
+	 * GPIO/relay output configuration.
+	 */
 	GpioProperties gpio;
 
+	/**
+	 * Minimum time between applied state changes to limit relay wear.
+	 */
 	Duration debounce = Duration.ofMinutes(5);
 
+	/**
+	 * Weather-based optimization configuration.
+	 */
 	Weather weather;
 
 	/**
@@ -92,7 +113,7 @@ public class SgReadyProperties {
 	 * @param pvExcessOn Battery state of Charge to turn on the heat pump to use. Should be higher than
 	 *          {@code pvExcessOff} to disable flickering (hysteresis).
 	 * @param pvExcessOff Battery state of Charge to turn off forced heat pump usage. Should be lower than
-	 *          {@code pvExcessOff} to disable flickering (hysteresis).
+	 *          {@code pvExcessOn} to disable flickering (hysteresis).
 	 */
 	public record Levels(Quantity<Dimensionless> pvAvailable, Quantity<Dimensionless> pvExcessOn,
 			Quantity<Dimensionless> pvExcessOff) {

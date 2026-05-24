@@ -15,13 +15,19 @@
  */
 package biz.paluch.sgreadypi.output;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 import org.springframework.context.annotation.Conditional;
 
 /**
  * {@link Conditional @Conditional} that only matches when the application is running on a Raspberry Pi platform.
  * 
  * @author Mark Paluch
+ * @see RaspberryPiCondition
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)

@@ -16,10 +16,11 @@
 package biz.paluch.sgreadypi;
 
 /**
- * SG Ready Protocol state mapping.
+ * SG Ready protocol state mapping the two relay signals to a named operating mode.
  *
- * @param a
- * @param b
+ * @param name the operating mode name, for example {@code EXCESS_PV}.
+ * @param a the SG Ready "A" signal.
+ * @param b the SG Ready "B" signal.
  */
 public record SgReadyState(String name, boolean a, boolean b) {
 
@@ -63,6 +64,13 @@ public record SgReadyState(String name, boolean a, boolean b) {
 		return NORMAL;
 	}
 
+	/**
+	 * Resolve a state from its {@link #name() name}.
+	 *
+	 * @param value the operating mode name to resolve; must not be {@literal null}.
+	 * @return the matching state.
+	 * @throws IllegalArgumentException if {@code value} does not name a known state.
+	 */
 	public static SgReadyState valueOf(String value) {
 		return switch (value) {
 			case "BLOCKED" -> BLOCKED;

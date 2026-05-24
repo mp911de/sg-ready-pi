@@ -15,9 +15,10 @@
  */
 package biz.paluch.sgreadypi.provider;
 
+import java.time.Duration;
+
 import javax.measure.Quantity;
 import javax.measure.Unit;
-import java.time.Duration;
 
 /**
  * Allows mutation of the {@link Statistics}.
@@ -29,10 +30,10 @@ public interface MutableStatistics<Q extends Quantity<Q>> extends Statistics<Q> 
 	/**
 	 * Create a new {@link MutableStatistics}.
 	 * 
-	 * @param duration
-	 * @param unit
-	 * @return
-	 * @param <Q>
+	 * @param <Q> the quantity type.
+	 * @param duration the averaging window.
+	 * @param unit the unit of the tracked quantity.
+	 * @return a new mutable statistics instance.
 	 */
 	static <Q extends Quantity<Q>> MutableStatistics<Q> create(Duration duration, Unit<Q> unit) {
 		return new DefaultStatistics<>(duration, unit);
@@ -41,7 +42,7 @@ public interface MutableStatistics<Q extends Quantity<Q>> extends Statistics<Q> 
 	/**
 	 * Provide a new {@code value} to the average.
 	 * 
-	 * @param value
+	 * @param value the new reading to record.
 	 */
 	void update(Quantity<Q> value);
 }

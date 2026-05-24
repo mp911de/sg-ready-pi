@@ -20,6 +20,8 @@ import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
+ * Health indicator exposing the {@link DebounceStateConsumer} current/next state and timing.
+ *
  * @author Mark Paluch
  */
 @Component

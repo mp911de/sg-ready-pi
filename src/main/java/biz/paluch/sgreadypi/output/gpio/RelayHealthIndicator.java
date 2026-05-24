@@ -23,6 +23,8 @@ import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.gpio.digital.DigitalState;
 
 /**
+ * Health indicator reporting the open/closed state of each relay channel.
+ *
  * @author Mark Paluch
  */
 record RelayHealthIndicator(PiRelHat3Ch relay) implements HealthIndicator {

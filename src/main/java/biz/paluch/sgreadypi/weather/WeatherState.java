@@ -19,6 +19,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
+ * Snapshot of weather relevant to PV yield: current temperature and pressure plus an hourly cloud-coverage forecast.
+ *
+ * @param temperature the current temperature in degrees Celsius.
+ * @param pressure the current pressure in hPa.
+ * @param cloudCoverage the hourly cloud-coverage forecast.
  * @author Mark Paluch
  */
 public record WeatherState(int temperature, int pressure, List<CloudCoverage> cloudCoverage) {

@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * Jackson binding for the Open-Meteo forecast response.
+ *
  * @author Mark Paluch
  */
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controller for SG Ready
+ * REST controller exposing and overriding the current SG Ready state.
  *
  * @author Mark Paluch
  */

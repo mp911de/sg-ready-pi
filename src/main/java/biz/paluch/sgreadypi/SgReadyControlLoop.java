@@ -259,7 +259,7 @@ public class SgReadyControlLoop {
 	/**
 	 * Notify {@link PowerConsumer} with current power state readings and run the function it defines.
 	 *
-	 * @param consumer
+	 * @param consumer the consumer to invoke with the current readings.
 	 */
 	private void doWithPower(PowerConsumer consumer) {
 
@@ -271,13 +271,13 @@ public class SgReadyControlLoop {
 	}
 
 	/**
-	 * Log state.
+	 * Log the current state and readings, at {@code INFO} when the state changed and {@code DEBUG} otherwise.
 	 *
-	 * @param state
-	 * @param ingress
-	 * @param pv
-	 * @param soc
-	 * @param changed
+	 * @param state the current SG Ready state.
+	 * @param ingress the current grid ingress.
+	 * @param pv the current generator power.
+	 * @param soc the current battery state of charge.
+	 * @param changed whether the state changed in this iteration.
 	 */
 	private void logState(SgReadyState state, Quantity<Power> ingress, Quantity<Power> pv, Quantity<Dimensionless> soc,
 			boolean changed) {
@@ -289,24 +289,24 @@ public class SgReadyControlLoop {
 	}
 
 	/**
-	 * Greater than/equals comparison.
+	 * Greater-than-or-equal comparison of two quantities by numeric value.
 	 *
-	 * @param a
-	 * @param b
-	 * @return
-	 * @param <Q>
+	 * @param <Q> the quantity type.
+	 * @param a the left-hand quantity.
+	 * @param b the right-hand quantity.
+	 * @return {@literal true} if {@code a >= b}; {@literal false} otherwise.
 	 */
 	static <Q extends Quantity<Q>> boolean gte(Quantity<Q> a, Quantity<Q> b) {
 		return a.getValue().doubleValue() >= b.getValue().doubleValue();
 	}
 
 	/**
-	 * Less than/equals comparison.
+	 * Less-than-or-equal comparison of two quantities by numeric value.
 	 *
-	 * @param a
-	 * @param b
-	 * @return
-	 * @param <Q>
+	 * @param <Q> the quantity type.
+	 * @param a the left-hand quantity.
+	 * @param b the right-hand quantity.
+	 * @return {@literal true} if {@code a <= b}; {@literal false} otherwise.
 	 */
 	static <Q extends Quantity<Q>> boolean lte(Quantity<Q> a, Quantity<Q> b) {
 		return a.getValue().doubleValue() <= b.getValue().doubleValue();
@@ -340,8 +340,8 @@ public class SgReadyControlLoop {
 		/**
 		 * Create a {@link ConditionOutcome} for a matching condition including a {@code message}.
 		 *
-		 * @param message
-		 * @return
+		 * @param message the human-readable explanation of the match.
+		 * @return a matching outcome with no parent.
 		 */
 		public static ConditionOutcome match(String message) {
 			return new ConditionOutcome(null, true, message);
@@ -350,8 +350,8 @@ public class SgReadyControlLoop {
 		/**
 		 * Create a {@link ConditionOutcome} for a not matching condition including a {@code message}.
 		 *
-		 * @param message
-		 * @return
+		 * @param message the human-readable explanation of the no-match.
+		 * @return a non-matching outcome with no parent.
 		 */
 		public static ConditionOutcome noMatch(String message) {
 			return new ConditionOutcome(null, false, message);
@@ -360,8 +360,8 @@ public class SgReadyControlLoop {
 		/**
 		 * Create a nested {@link ConditionOutcome} for a matching condition including a {@code message}.
 		 *
-		 * @param message
-		 * @return
+		 * @param message the human-readable explanation of the match.
+		 * @return a matching outcome chained to this one.
 		 */
 		public ConditionOutcome nestedMatch(String message) {
 			return new ConditionOutcome(this, true, message);
@@ -370,18 +370,18 @@ public class SgReadyControlLoop {
 		/**
 		 * Create a nested {@link ConditionOutcome} for a not matching condition including a {@code message}.
 		 *
-		 * @param message
-		 * @return
+		 * @param message the human-readable explanation of the no-match.
+		 * @return a non-matching outcome chained to this one.
 		 */
 		public ConditionOutcome nestedNoMatch(String message) {
 			return new ConditionOutcome(this, false, message);
 		}
 
 		/**
-		 * Create a nested {@link ConditionOutcome} for a nested {@link ConditionOutcome}.
+		 * Wrap the given {@code nested} outcome as a child of this outcome, inheriting its match result.
 		 *
-		 * @param message
-		 * @return
+		 * @param nested the child outcome to attach.
+		 * @return a new outcome chained to this one.
 		 */
 		public ConditionOutcome nested(ConditionOutcome nested) {
 			return new ConditionOutcome(this, nested.isMatch(), nested.message);
@@ -420,8 +420,8 @@ public class SgReadyControlLoop {
 		/**
 		 * A decision resulting in {@link SgReadyState#NORMAL}.
 		 *
-		 * @param outcome
-		 * @return
+		 * @param outcome the reasoning behind the decision.
+		 * @return a decision for the normal state.
 		 */
 		static Decision normal(ConditionOutcome outcome) {
 			return new Decision(SgReadyState.NORMAL, outcome);
@@ -430,8 +430,8 @@ public class SgReadyControlLoop {
 		/**
 		 * A decision resulting in {@link SgReadyState#AVAILABLE_PV}.
 		 *
-		 * @param outcome
-		 * @return
+		 * @param outcome the reasoning behind the decision.
+		 * @return a decision for the available-PV state.
 		 */
 		static Decision availablePv(ConditionOutcome outcome) {
 			return new Decision(SgReadyState.AVAILABLE_PV, outcome);
@@ -440,8 +440,8 @@ public class SgReadyControlLoop {
 		/**
 		 * A decision resulting in {@link SgReadyState#EXCESS_PV}.
 		 *
-		 * @param outcome
-		 * @return
+		 * @param outcome the reasoning behind the decision.
+		 * @return a decision for the excess-PV state.
 		 */
 		static Decision excessPv(ConditionOutcome outcome) {
 			return new Decision(SgReadyState.EXCESS_PV, outcome);

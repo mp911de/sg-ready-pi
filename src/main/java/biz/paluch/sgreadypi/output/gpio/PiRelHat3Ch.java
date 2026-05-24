@@ -38,7 +38,7 @@ import com.pi4j.library.pigpio.PiGpioException;
  * Output consumer for 3 channels.
  *
  * @author Mark Paluch
- * @link <a href="https://www.waveshare.com/wiki/RPi_Relay_Board">3Ch RPi Relay Board</a>
+ * @see <a href="https://www.waveshare.com/wiki/RPi_Relay_Board">3Ch RPi Relay Board</a>
  */
 public class PiRelHat3Ch implements Relay {
 

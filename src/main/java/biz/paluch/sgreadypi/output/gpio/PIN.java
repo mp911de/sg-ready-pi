@@ -16,7 +16,9 @@
 package biz.paluch.sgreadypi.output.gpio;
 
 /**
- * Helper Class, used as Raspberry-Pi pin-numbering. Is helpful to see, which pin can act as what I/O provider
+ * Raspberry Pi BCM pin numbering, mapping each logical pin name to its GPIO number.
+ *
+ * @author Mark Paluch
  */
 public enum PIN {
     SDA1(2),

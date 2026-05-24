@@ -26,9 +26,12 @@ import biz.paluch.sgreadypi.SgReadyState;
 public interface SgReadyStateConsumer {
 
 	/**
-	 * Consumer for a state change.
+	 * Apply a new SG Ready state to the underlying output.
+	 * <p>
+	 * Implementations may be invoked repeatedly with the same state and should be idempotent. Implementations should not
+	 * block; long-running work should be dispatched elsewhere.
 	 *
-	 * @param state
+	 * @param state the state to apply; must not be {@literal null}.
 	 */
 	void onState(SgReadyState state);
 

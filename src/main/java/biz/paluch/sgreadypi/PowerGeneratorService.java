@@ -31,26 +31,34 @@ import javax.measure.quantity.Power;
 public interface PowerGeneratorService {
 
 	/**
-	 * @return percentage of battery charge state.
+	 * Return the aggregate battery state of charge across all inverters.
+	 *
+	 * @return the battery state of charge as a percentage; never {@literal null}.
 	 */
 	default Quantity<Dimensionless> getBatteryStateOfCharge() {
 		return Percent.zero();
 	}
 
 	/**
-	 * @return available generator power in {@link tech.units.indriya.unit.Units#WATT}.
+	 * Return the generator power statistics, that is the usable solar surplus.
+	 *
+	 * @return generator power statistics in {@link tech.units.indriya.unit.Units#WATT}; never {@literal null}.
 	 */
 	default Statistics<Power> getGeneratorPower() {
 		return Statistics.just(Watt.zero());
 	}
 
 	/**
-	 * @return {@code true} if the service is alive and has recent data.
+	 * Return whether the service is alive and holds recent data.
+	 *
+	 * @return {@literal true} if recent data is available; {@literal false} otherwise.
 	 */
 	boolean hasData();
 
 	/**
-	 * @return {@code true} if the service is out of service (i.e. degraded state exceeded).
+	 * Return whether the service is out of service because its data age exceeded the degraded threshold.
+	 *
+	 * @return {@literal true} if out of service; {@literal false} otherwise.
 	 */
 	boolean isOutOfService();
 

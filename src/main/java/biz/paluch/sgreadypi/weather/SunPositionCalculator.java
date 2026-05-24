@@ -22,9 +22,9 @@ import net.e175.klaus.solarpositioning.SunriseResult;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-import org.springframework.stereotype.Component;
-
 /**
+ * Calculates sunset times for a {@link GeoPosition} using the SPA algorithm.
+ *
  * @author Mark Paluch
  */
 class SunPositionCalculator {
@@ -36,10 +36,10 @@ class SunPositionCalculator {
 	}
 
 	/**
-	 * Obtain the local time for the sunset.
+	 * Obtain the local time for the sunset at the given position.
 	 *
-	 * @param geoPosition
-	 * @return
+	 * @param geoPosition the geographic position to calculate sunset for.
+	 * @return the local sunset date-time, or the solar transit time when the sun does not set.
 	 */
 	public LocalDateTime getSunset(GeoPosition geoPosition) {
 

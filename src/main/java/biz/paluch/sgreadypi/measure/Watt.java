@@ -31,17 +31,19 @@ public class Watt {
 	private static final Quantity<Power> ZERO = of(0);
 
 	/**
-	 * Create Quantity of Power from {@code watt}.
+	 * Create a power {@link Quantity} in watts from the given {@code watts} value.
 	 *
-	 * @param watts watt of power.
-	 * @return
+	 * @param watts the power in watts.
+	 * @return the power quantity.
 	 */
 	public static Quantity<Power> of(int watts) {
 		return Quantities.getQuantity(watts, Units.WATT);
 	}
 
 	/**
-	 * @return zero watt quantity.
+	 * Return a cached zero-watt quantity.
+	 *
+	 * @return the zero-watt quantity; never {@literal null}.
 	 */
 	public static Quantity<Power> zero() {
 		return ZERO;

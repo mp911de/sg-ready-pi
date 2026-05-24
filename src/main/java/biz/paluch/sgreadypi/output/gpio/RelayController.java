@@ -32,6 +32,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.pi4j.io.gpio.digital.DigitalState;
 
 /**
+ * REST controller exposing and overriding individual relay channel states.
+ *
  * @author Mark Paluch
  */
 @RestController

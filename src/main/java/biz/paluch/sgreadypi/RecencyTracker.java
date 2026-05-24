@@ -24,8 +24,10 @@ import java.time.Duration;
  */
 public interface RecencyTracker {
 
+	/** Default upper bound on data age still considered {@link HealthState#HEALTHY}. */
 	Duration MAX_HEALTHY = Duration.ofMinutes(1);
 
+	/** Default data age at or beyond which the component is {@link HealthState#OUT_OF_SERVICE}. */
 	Duration OUT_OF_SERVICE = Duration.ofMinutes(10);
 
 	/**

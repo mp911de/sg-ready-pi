@@ -17,11 +17,14 @@ package biz.paluch.sgreadypi.provider;
 
 import tech.units.indriya.quantity.Quantities;
 
-import javax.measure.Quantity;
-import javax.measure.Unit;
 import java.time.Duration;
 
+import javax.measure.Quantity;
+import javax.measure.Unit;
+
 /**
+ * Default {@link MutableStatistics} backed by a moving {@link Average}.
+ *
  * @author Mark Paluch
  */
 class DefaultStatistics<Q extends Quantity<Q>> implements MutableStatistics<Q> {

@@ -19,14 +19,17 @@ import biz.paluch.sgreadypi.SgReadyState;
 import biz.paluch.sgreadypi.output.SgReadyStateConsumer;
 
 /**
- * Marker interface for relays.
+ * A relay output that reflects and applies the current {@link SgReadyState}.
  *
  * @author Mark Paluch
+ * @see SgReadyStateConsumer
  */
 public interface Relay extends SgReadyStateConsumer {
 
 	/**
 	 * Return the current {@link SgReadyState}.
+	 *
+	 * @return the state currently applied to the relay; never {@literal null}.
 	 */
 	SgReadyState getState();
 
