@@ -18,6 +18,7 @@ package biz.paluch.sgreadypi.weather;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
@@ -43,17 +44,17 @@ record WeatherHealthIndicator(WeatherService weatherService) implements HealthIn
 
 		WeatherState weather = weatherService.getWeatherState();
 		LocalDateTime sunset = weatherService.getSunset();
-		WeatherService.Range timeRange = weatherService.getUsableTimeRange();
+		WeatherService.@Nullable Range timeRange = weatherService.getUsableTimeRange();
 
 		builder.withDetail("weather", weather);
 		builder.withDetail("sunset", sunset);
 
-		Map<String, ? extends Comparable<? extends Comparable<?>>> weatherDetail = Map.of("from", timeRange.from(),
-				"afterSunset", timeRange.afterSunset(), "afterSunsetLimit", timeRange.afterSunsetLimit(), "enoughSunHours",
-				timeRange.enoughRemainingSunHours());
-
-		builder.withDetail("sunset", sunset);
-		builder.withDetail("detail", weatherDetail);
+		if (timeRange != null) {
+			Map<String, ? extends Comparable<? extends Comparable<?>>> weatherDetail = Map.of("from", timeRange.from(),
+					"afterSunset", timeRange.afterSunset(), "afterSunsetLimit", timeRange.afterSunsetLimit(), "enoughSunHours",
+					timeRange.enoughRemainingSunHours());
+			builder.withDetail("detail", weatherDetail);
+		}
 	}
 
 }

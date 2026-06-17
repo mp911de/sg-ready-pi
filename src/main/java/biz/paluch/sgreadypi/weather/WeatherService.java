@@ -19,13 +19,19 @@ import biz.paluch.sgreadypi.SgReadyProperties;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.RestTemplateBuilder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -36,14 +42,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class WeatherService {
 
+	private static final Logger log = LoggerFactory.getLogger(WeatherService.class);
+
 	// cloud coverage in percent
 	private static final int MAX_ACCEPTABLE_CLOUD_COVERAGE = 60;
+
+	// forecast is refreshed in the background once the cached state is older than this window
+	private static final Duration CACHE_WINDOW = Duration.ofHours(4);
 
 	private final SgReadyProperties.@Nullable Weather properties;
 	private final Clock clock;
 	private final @Nullable GeoPosition position;
 	private final WeatherClient client;
 	private final SunPositionCalculator calculator;
+
+	private final Object refreshLock = new Object();
+	private volatile @Nullable WeatherState weatherState;
+	private volatile @Nullable Instant lastUpdate;
 
 	@Autowired
 	public WeatherService(SgReadyProperties properties, RestTemplateBuilder builder, Clock clock) {
@@ -60,11 +75,64 @@ public class WeatherService {
 
 	/**
 	 * Return the current weather state for the configured position.
+	 * <p>
+	 * Served from the cache without blocking once the forecast has been loaded. The very first access (cold cache) passes
+	 * the request straight through to the {@link WeatherClient} rather than waiting for the background refresh, fetching
+	 * under a lock so concurrent callers do not issue duplicate requests.
 	 *
 	 * @return the weather state; never {@literal null}.
+	 * @throws RuntimeException if the forecast has never been loaded and the pass-through fetch fails.
 	 */
 	public WeatherState getWeatherState() {
-		return client.getWeatherState(getRequiredPosition());
+
+		WeatherState weatherState = this.weatherState;
+		if (weatherState != null) {
+			return weatherState;
+		}
+
+		synchronized (refreshLock) {
+			weatherState = this.weatherState;
+			if (weatherState != null) {
+				return weatherState;
+			}
+			return fetchAndCache(getRequiredPosition());
+		}
+	}
+
+	/**
+	 * Refresh the cached forecast in the background once it falls outside the {@link #CACHE_WINDOW}. Runs on the shared
+	 * task scheduler; on failure the last-known forecast is retained so the control loop keeps deferring on the most
+	 * recent data instead of losing weather optimisation.
+	 */
+	@Scheduled(fixedDelay = 4, timeUnit = TimeUnit.HOURS)
+	void refreshWeather() {
+
+		GeoPosition position = this.position;
+		SgReadyProperties.Weather properties = this.properties;
+		if (position == null || properties == null || !properties.isEnabled()) {
+			return;
+		}
+
+		Instant lastUpdate = this.lastUpdate;
+		if (lastUpdate != null && clock.instant().isBefore(lastUpdate.plus(CACHE_WINDOW))) {
+			return;
+		}
+
+		try {
+			synchronized (refreshLock) {
+				fetchAndCache(position);
+			}
+		} catch (RuntimeException ex) {
+			log.warn("Weather forecast refresh failed; continuing to serve the last-known forecast", ex);
+		}
+	}
+
+	private WeatherState fetchAndCache(GeoPosition position) {
+
+		WeatherState weatherState = client.getWeatherState(position);
+		this.weatherState = weatherState;
+		this.lastUpdate = clock.instant();
+		return weatherState;
 	}
 
 	/**
@@ -98,12 +166,21 @@ public class WeatherService {
 	/**
 	 * Determine the usable time range during which excess solar power should be consumed.
 	 *
-	 * @return the usable time range; never {@literal null}.
+	 * @return the usable time range, or {@literal null} when no forecast has been loaded yet. A {@literal null} result
+	 *         lets the policy decide on state of charge alone, without weather deferral.
 	 */
-	public Range getUsableTimeRange() {
+	public @Nullable Range getUsableTimeRange() {
 
 		SgReadyProperties.Weather properties = getRequiredProperties();
-		WeatherState weatherState = getWeatherState();
+
+		WeatherState weatherState;
+		try {
+			weatherState = getWeatherState();
+		} catch (RuntimeException ex) {
+			log.warn("Weather forecast unavailable; proceeding without weather deferral", ex);
+			return null;
+		}
+
 		LocalDateTime sunset = getSunset();
 		LocalDateTime now = LocalDateTime.now(clock);
 		LocalDateTime beforeSunsetLimit = sunset.minus(properties.getNotBeforeSunset());

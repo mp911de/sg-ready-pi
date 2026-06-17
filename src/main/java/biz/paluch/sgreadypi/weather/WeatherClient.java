@@ -16,8 +16,6 @@
 package biz.paluch.sgreadypi.weather;
 
 import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -25,25 +23,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
 
 /**
  * API Client for <a href="https://open-meteo.com/">Open Meteo</a>.
+ * <p>
+ * The client is stateless and performs a forecast request on every call; caching of the weather state is the
+ * responsibility of {@link WeatherService}.
  *
  * @author Mark Paluch
  */
 class WeatherClient {
 
 	private static final String API_URL = "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature,weather_code,pressure_msl,surface_pressure&hourly=temperature_2m,weather_code,cloud_cover_low,cloud_cover_mid&forecast_days=1";
-	private final Duration UPDATE_DELAY = Duration.ofHours(1);
 
 	private final RestTemplate restTemplate;
 	private final Clock clock;
-
-	private volatile @Nullable WeatherState cached;
-	private volatile @Nullable Instant lastUpdate;
 
 	public WeatherClient(RestTemplateBuilder builder, Clock clock) {
 		this.restTemplate = builder.build();
@@ -51,28 +47,12 @@ class WeatherClient {
 	}
 
 	/**
-	 * Obtain the weather state for a given {@link GeoPosition}, served from a one-hour cache.
+	 * Fetch the current weather state for a given {@link GeoPosition} from Open Meteo.
 	 *
 	 * @param position the geographic position to query.
-	 * @return the cached or freshly fetched weather state.
+	 * @return the freshly fetched weather state.
 	 */
 	public WeatherState getWeatherState(GeoPosition position) {
-
-		WeatherState cached = this.cached;
-		Instant lastUpdate = this.lastUpdate;
-
-		if (cached == null || lastUpdate == null || lastUpdate.plus(UPDATE_DELAY).isBefore(clock.instant())) {
-			cached = doGetWeatherState(position);
-			lastUpdate = clock.instant();
-
-			this.cached = cached;
-			this.lastUpdate = lastUpdate;
-		}
-
-		return cached;
-	}
-
-	private WeatherState doGetWeatherState(GeoPosition position) {
 
 		Map<String, Double> uriVariables = Map.of("latitude", position.latitude(), "longitude", position.longitude());
 		WeatherResponse response = restTemplate.getForObject(API_URL, WeatherResponse.class, uriVariables);

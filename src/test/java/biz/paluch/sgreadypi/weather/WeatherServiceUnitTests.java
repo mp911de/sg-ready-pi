@@ -107,4 +107,32 @@ class WeatherServiceUnitTests {
 		assertThat(usableTimeRange.remainingSunDuration().toString()).contains("2H37M");
 		assertThat(usableTimeRange.enoughRemainingSunHours()).isFalse();
 	}
+
+	@Test
+	void shouldServeCachedForecastWithoutRefetching() {
+
+		Clock clock = Clock.fixed(Instant.parse("2007-12-03T09:15:30.00Z"), ZoneId.of("Europe/Paris"));
+		WeatherService service = new WeatherService(properties, client, clock);
+
+		WeatherState state = new WeatherState(0, 0,
+				List.of(new CloudCoverage(LocalDateTime.parse("2007-12-03T10:00:00.00"), 0),
+						new CloudCoverage(LocalDateTime.parse("2007-12-03T11:00:00.00"), 0)));
+		when(client.getWeatherState(any())).thenReturn(state);
+
+		service.getUsableTimeRange();
+		service.getUsableTimeRange();
+
+		verify(client, times(1)).getWeatherState(any());
+	}
+
+	@Test
+	void shouldReturnNullWhenForecastUnavailableOnColdStart() {
+
+		Clock clock = Clock.fixed(Instant.parse("2007-12-03T09:15:30.00Z"), ZoneId.of("Europe/Paris"));
+		WeatherService service = new WeatherService(properties, client, clock);
+
+		when(client.getWeatherState(any())).thenThrow(new RuntimeException("Open-Meteo unavailable"));
+
+		assertThat(service.getUsableTimeRange()).isNull();
+	}
 }
