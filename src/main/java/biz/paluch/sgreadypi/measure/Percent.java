@@ -36,7 +36,7 @@ public class Percent {
 	 * @param value the percentage value, for example {@code 80} for 80%.
 	 * @return the percentage quantity.
 	 */
-	public static Quantity<Dimensionless> of(int value) {
+	public static Quantity<Dimensionless> of(Number value) {
 		return Quantities.getQuantity(value, Units.PERCENT);
 	}
 

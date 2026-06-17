@@ -15,6 +15,7 @@
  */
 package biz.paluch.sgreadypi.config;
 
+import biz.paluch.sgreadypi.measure.Percent;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
@@ -59,20 +60,28 @@ public class QuantityConverter implements ConditionalGenericConverter {
 
 		ResolvableType component = targetType.getResolvableType().getGeneric(0);
 		Unit<?> unit = Units.getInstance().getUnit((Class) component.resolve());
+		if (Units.WATT.isCompatible(unit)) {
+
+			try {
+				return Quantities.getQuantity(Integer.parseInt(source.toString()), unit);
+			} catch (NumberFormatException ignored) {}
+
+			try {
+				return Quantities.getQuantity(Long.parseLong(source.toString()), unit);
+			} catch (NumberFormatException ignored) {}
+
+			try {
+				return Quantities.getQuantity(Double.parseDouble(source.toString()), unit);
+			} catch (NumberFormatException ignored) {}
+
+			return Quantities.getQuantity(source.toString());
+		}
 
 		try {
-			return Quantities.getQuantity(Integer.parseInt(source.toString()), unit);
-		} catch (NumberFormatException ignored) {}
-
-		try {
-			return Quantities.getQuantity(Long.parseLong(source.toString()), unit);
-		} catch (NumberFormatException ignored) {}
-
-		try {
-			return Quantities.getQuantity(Double.parseDouble(source.toString()), unit);
-		} catch (NumberFormatException ignored) {}
-
-		return Quantities.getQuantity(source.toString());
+			return Percent.of(Integer.parseInt(source.toString()));
+		} catch (NumberFormatException ignored) {
+			return Quantities.getQuantity(source.toString());
+		}
 	}
 
 }

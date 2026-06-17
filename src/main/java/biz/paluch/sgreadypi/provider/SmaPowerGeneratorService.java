@@ -18,12 +18,12 @@ package biz.paluch.sgreadypi.provider;
 import biz.paluch.sgreadypi.PowerGeneratorService;
 import biz.paluch.sgreadypi.RecencyTracker;
 import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.measure.Percent;
 import biz.paluch.sgreadypi.measure.Watt;
 import cat.joanpujol.smasolar.modbus.ModbusRegister;
 import cat.joanpujol.smasolar.modbus.SmaModbusClient;
 import cat.joanpujol.smasolar.modbus.SmaModbusRequest;
 import cat.joanpujol.smasolar.modbus.SmaModbusResponse;
-import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.Units;
 
 import java.time.Duration;
@@ -152,7 +152,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 	public Quantity<Dimensionless> getBatteryStateOfCharge() {
 		double average = stateMap.values().stream().filter(InverterState::hasBattery).mapToInt(InverterState::stateOfCharge)
 				.average().orElse(0);
-		return Quantities.getQuantity(average, Units.PERCENT);
+		return Percent.of(average);
 	}
 
 	@Override
