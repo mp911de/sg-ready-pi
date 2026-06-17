@@ -173,7 +173,7 @@ export default {
     },
 
     async getHealth() {
-      const {data} = await axios.get("/actuator/health");
+      const {data} = await axios.get("/actuator/health", {validateStatus: (s) => (s >= 200 && s < 300) || s === 503});
       this.health = normalizeHealth(data);
     },
 
