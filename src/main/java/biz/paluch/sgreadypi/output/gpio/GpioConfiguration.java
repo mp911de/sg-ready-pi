@@ -151,8 +151,7 @@ public class GpioConfiguration {
 
 	private static boolean hasRelayPins(Environment environment) {
 		return StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_A))
-				&& StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_B))
-				&& StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_C));
+				&& StringUtils.hasText(environment.getProperty(GPIO_RPI3_CH_PIN_B));
 	}
 
 }
