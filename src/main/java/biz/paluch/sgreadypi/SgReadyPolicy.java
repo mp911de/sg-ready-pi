@@ -162,18 +162,18 @@ public class SgReadyPolicy {
 
 					if (canRunElement) {
 						return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
-								"Battery SoC %s above excess PV start threshold %s %% and generator power %s covers heat element %s"
+								"Battery SoC %s above excess PV start threshold %s and generator power %s covers heat element %s"
 										.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
 					}
 
 					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Battery SoC %s above excess PV start threshold %s %% but generator power %s below heat element draw %s, staying on compressor"
+							"Battery SoC %s above excess PV start threshold %s but generator power %s below heat element draw %s, staying on compressor"
 									.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
 				}
 
 				if (currentState == SgReadyState.NORMAL) {
 					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Battery SoC %s below excess PV start threshold %s %%, switching from normal to available"
+							"Battery SoC %s below excess PV start threshold %s, switching from normal to available"
 									.formatted(soc, battery.pvExcessOn())));
 				}
 
@@ -188,10 +188,10 @@ public class SgReadyPolicy {
 			} else if (Hysteresis.active(consuming, soc, battery.pvAvailable(),
 					battery.pvAvailable().subtract(properties.getAvailableSocOffMargin()))) {
 				return Decision.availablePv(qualifiesForExcessPower
-						.nestedMatch("Battery SoC %s above required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
+						.nestedMatch("Battery SoC %s above required SoC threshold %s".formatted(soc, battery.pvAvailable())));
 			} else {
 				return Decision.normal(qualifiesForExcessPower
-						.nestedNoMatch("Battery SoC %s below required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
+						.nestedNoMatch("Battery SoC %s below required SoC threshold %s".formatted(soc, battery.pvAvailable())));
 			}
 		}
 
@@ -234,9 +234,9 @@ public class SgReadyPolicy {
 
 		ConditionOutcome socBelowPvExcessOff = gte(soc, battery.pvExcessOff())
 				? ConditionOutcome
-						.match("Battery SoC %s above SoC for excess PV stop threshold %s %%".formatted(soc, battery.pvExcessOff()))
+						.match("Battery SoC %s above SoC for excess PV stop threshold %s".formatted(soc, battery.pvExcessOff()))
 				: ConditionOutcome.noMatch(
-						"Battery SoC %s below SoC for excess PV stop threshold %s %%".formatted(soc, battery.pvExcessOff()));
+						"Battery SoC %s below SoC for excess PV stop threshold %s".formatted(soc, battery.pvExcessOff()));
 
 		return outcome == null ? socBelowPvExcessOff : outcome.nested(socBelowPvExcessOff);
 	}
