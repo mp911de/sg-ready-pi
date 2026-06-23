@@ -67,9 +67,18 @@ public class SgReadyProperties {
 	Duration averaging = Duration.ofSeconds(300);
 
 	/**
-	 * Power consumption of the heat pump in Watt.
+	 * Power consumption of the heat pump in Watt. Used to gate any PV state: generator power must reach this value
+	 * (compressor draw) before {@link SgReadyState#AVAILABLE_PV} or {@link SgReadyState#EXCESS_PV} is considered.
 	 */
 	Quantity<Power> heatPumpPowerConsumption;
+
+	/**
+	 * Power consumption of the heat pump's internal resistive heating element (Heizstab) in Watt. Used to gate
+	 * {@link SgReadyState#EXCESS_PV} (signal 1:1, resistive heating): the element is only requested when generator power
+	 * can cover this draw, whereas {@link SgReadyState#AVAILABLE_PV} (signal 0:1, compressor) is gated by
+	 * {@link #heatPumpPowerConsumption}.
+	 */
+	Quantity<Power> heatElementPowerConsumption = Watt.of(4000);
 
 	/**
 	 * Limit above which the SG Ready state is set to normal operations. Any lower power ingress is considered temporary
@@ -93,6 +102,20 @@ public class SgReadyProperties {
 	Levels battery = new Levels(Percent.of(20), Percent.of(80), Percent.of(60));
 
 	/**
+	 * Hysteresis ratio applied to {@link #heatPumpPowerConsumption} and {@link #heatElementPowerConsumption} to derive
+	 * the generator-power off-thresholds: an active PV state is retained until generator power drops below
+	 * {@code threshold * ratio}. Lower values widen the band and reduce flickering. Defaults to {@code 0.7}.
+	 */
+	double generatorPowerOffRatio = 0.7;
+
+	/**
+	 * Hysteresis margin subtracted from {@link Levels#pvAvailable()} to derive its off-threshold: once in
+	 * {@link SgReadyState#AVAILABLE_PV}, the state is retained until the battery state of charge drops below
+	 * {@code pvAvailable - margin}. Defaults to {@code 5} %.
+	 */
+	Quantity<Dimensionless> availableSocOffMargin = Percent.of(5);
+
+	/**
 	 * GPIO/relay output configuration.
 	 */
 	GpioProperties gpio;
@@ -100,7 +123,7 @@ public class SgReadyProperties {
 	/**
 	 * Minimum time between applied state changes to limit relay wear.
 	 */
-	Duration debounce = Duration.ofMinutes(5);
+	Duration debounce = Duration.ofMinutes(15);
 
 	/**
 	 * Weather-based optimization configuration.
@@ -133,6 +156,10 @@ public class SgReadyProperties {
 		return this.heatPumpPowerConsumption;
 	}
 
+	public Quantity<Power> getHeatElementPowerConsumption() {
+		return this.heatElementPowerConsumption;
+	}
+
 	public Quantity<Power> getIngressLimit() {
 		return this.ingressLimit;
 	}
@@ -147,6 +174,14 @@ public class SgReadyProperties {
 
 	public Levels getBattery() {
 		return this.battery;
+	}
+
+	public double getGeneratorPowerOffRatio() {
+		return this.generatorPowerOffRatio;
+	}
+
+	public Quantity<Dimensionless> getAvailableSocOffMargin() {
+		return this.availableSocOffMargin;
 	}
 
 	public GpioProperties getGpio() {
@@ -185,6 +220,10 @@ public class SgReadyProperties {
 		this.heatPumpPowerConsumption = heatPumpPowerConsumption;
 	}
 
+	public void setHeatElementPowerConsumption(Quantity<Power> heatElementPowerConsumption) {
+		this.heatElementPowerConsumption = heatElementPowerConsumption;
+	}
+
 	public void setIngressLimit(Quantity<Power> ingressLimit) {
 		this.ingressLimit = ingressLimit;
 	}
@@ -199,6 +238,14 @@ public class SgReadyProperties {
 
 	public void setBattery(Levels battery) {
 		this.battery = battery;
+	}
+
+	public void setGeneratorPowerOffRatio(double generatorPowerOffRatio) {
+		this.generatorPowerOffRatio = generatorPowerOffRatio;
+	}
+
+	public void setAvailableSocOffMargin(Quantity<Dimensionless> availableSocOffMargin) {
+		this.availableSocOffMargin = availableSocOffMargin;
 	}
 
 	public void setGpio(GpioProperties gpio) {
@@ -216,9 +263,12 @@ public class SgReadyProperties {
 	public String toString() {
 		return "SgReadyProperties(powerMeterId=" + this.getPowerMeterId() + ", inverterHosts=" + this.getInverterHosts()
 				+ ", inverterPort=" + this.getInverterPort() + ", queryInterval=" + this.getQueryInterval() + ", averaging="
-				+ this.getAveraging() + ", heatPumpPowerConsumption=" + this.getHeatPumpPowerConsumption() + ", ingressLimit="
+				+ this.getAveraging() + ", heatPumpPowerConsumption=" + this.getHeatPumpPowerConsumption()
+				+ ", heatElementPowerConsumption=" + this.getHeatElementPowerConsumption() + ", ingressLimit="
 				+ this.getIngressLimit() + ", excessNotBefore=" + this.getExcessNotBefore() + ", excessNotAfter="
-				+ this.getExcessNotAfter() + ", battery=" + this.getBattery() + ", gpio=" + this.getGpio() + ", debounce="
+				+ this.getExcessNotAfter() + ", battery=" + this.getBattery() + ", generatorPowerOffRatio="
+				+ this.getGeneratorPowerOffRatio() + ", availableSocOffMargin=" + this.getAvailableSocOffMargin() + ", gpio="
+				+ this.getGpio() + ", debounce="
 				+ this.getDebounce() + ", weather=" + this.getWeather() + ")";
 	}
 

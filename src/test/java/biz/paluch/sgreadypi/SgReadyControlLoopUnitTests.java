@@ -54,6 +54,7 @@ class SgReadyControlLoopUnitTests {
 	void setUp() {
 
 		properties.setHeatPumpPowerConsumption(Watt.of(100));
+		properties.setHeatElementPowerConsumption(Watt.of(100));
 		properties.setWeather(new SgReadyProperties.Weather());
 
 		controller = new SgReadyControlLoop(inverters, powerMeter, stateConsumer, properties, null,

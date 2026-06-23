@@ -52,6 +52,7 @@ class SgReadyPolicyUnitTests {
 	@BeforeEach
 	void setUp() {
 		properties.setHeatPumpPowerConsumption(Watt.of(100));
+		properties.setHeatElementPowerConsumption(Watt.of(100));
 		properties.setWeather(new SgReadyProperties.Weather());
 	}
 
@@ -234,6 +235,67 @@ class SgReadyPolicyUnitTests {
 
 		assertThat(SgReadyPolicy.gte(eightyPercent, Percent.of(80))).isTrue();
 		assertThat(SgReadyPolicy.gte(seventyNinePercent, Percent.of(80))).isFalse();
+	}
+
+	@Test
+	void shouldStayOnCompressorWhenGeneratorBelowHeatElement() {
+
+		properties.setHeatPumpPowerConsumption(Watt.of(1000));
+		properties.setHeatElementPowerConsumption(Watt.of(4000));
+
+		Decision decision = decide(SgReadyState.NORMAL, conditions(0, 2000, 80));
+
+		assertThat(decision.state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+	}
+
+	@Test
+	void shouldForceExcessWhenGeneratorCoversHeatElement() {
+
+		properties.setHeatPumpPowerConsumption(Watt.of(1000));
+		properties.setHeatElementPowerConsumption(Watt.of(4000));
+
+		Decision decision = decide(SgReadyState.NORMAL, conditions(0, 5000, 80));
+
+		assertThat(decision.state()).isEqualTo(SgReadyState.EXCESS_PV);
+	}
+
+	@Test
+	void shouldDowngradeExcessWhenGeneratorDropsBelowHeatElement() {
+
+		properties.setHeatPumpPowerConsumption(Watt.of(1000));
+		properties.setHeatElementPowerConsumption(Watt.of(4000));
+
+		Decision decision = decide(SgReadyState.EXCESS_PV, conditions(0, 2000, 70));
+
+		assertThat(decision.state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+	}
+
+	@Test
+	void shouldApplyGeneratorPowerHysteresis() {
+
+		properties.setHeatPumpPowerConsumption(Watt.of(1000));
+
+		// 800 W is below the 1000 W on-threshold but above the 700 W off-threshold
+		assertThat(decide(SgReadyState.AVAILABLE_PV, conditions(0, 800, 30)).state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+		assertThat(decide(SgReadyState.NORMAL, conditions(0, 800, 30)).state()).isEqualTo(SgReadyState.NORMAL);
+	}
+
+	@Test
+	void shouldApplyAvailableStateOfChargeHysteresis() {
+
+		// SoC 17 % is below the 20 % on-threshold but above the 15 % off-threshold
+		assertThat(decide(SgReadyState.AVAILABLE_PV, conditions(0, 100, 17)).state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+		assertThat(decide(SgReadyState.NORMAL, conditions(0, 100, 17)).state()).isEqualTo(SgReadyState.NORMAL);
+	}
+
+	@Test
+	void shouldUseConfiguredHysteresisProperties() {
+
+		properties.setHeatPumpPowerConsumption(Watt.of(1000));
+		properties.setGeneratorPowerOffRatio(0.5); // off-threshold becomes 500 W instead of the 700 W default
+
+		assertThat(decide(SgReadyState.AVAILABLE_PV, conditions(0, 600, 30)).state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+		assertThat(decide(SgReadyState.AVAILABLE_PV, conditions(0, 400, 30)).state()).isEqualTo(SgReadyState.NORMAL);
 	}
 
 	private Decision decide(SgReadyState currentState, Conditions conditions) {

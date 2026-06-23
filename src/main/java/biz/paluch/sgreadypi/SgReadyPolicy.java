@@ -109,10 +109,15 @@ public class SgReadyPolicy {
 					ConditionOutcome.match("Ingress %s exceeds limit %s".formatted(ingress, properties.getIngressLimit())));
 		}
 
-		if (gte(generatorPower, properties.getHeatPumpPowerConsumption())) {
+		boolean consuming = currentState != SgReadyState.NORMAL;
+		Quantity<Power> generatorOn = properties.getHeatPumpPowerConsumption();
+		Quantity<Power> generatorOff = generatorOn.multiply(properties.getGeneratorPowerOffRatio());
 
-			ConditionOutcome match = ConditionOutcome.match("Generator power %s above heat pump consumption %s"
-					.formatted(generatorPower, properties.getHeatPumpPowerConsumption()));
+		if (Hysteresis.active(consuming, generatorPower, generatorOn, generatorOff)) {
+
+			ConditionOutcome match = ConditionOutcome
+					.match("Generator power %s above heat pump consumption %s (hysteresis off %s)".formatted(generatorPower,
+							generatorOn, generatorOff));
 
 			SgReadyProperties.Levels battery = properties.getBattery();
 			ConditionOutcome qualifiesForExcessPower = match.nested(qualifiesForExcessPower(battery,
@@ -146,22 +151,42 @@ public class SgReadyPolicy {
 				}
 			}
 
+			Quantity<Power> elementOn = properties.getHeatElementPowerConsumption();
+			Quantity<Power> elementOff = elementOn.multiply(properties.getGeneratorPowerOffRatio());
+			boolean canRunElement = Hysteresis.active(currentState == SgReadyState.EXCESS_PV, generatorPower, elementOn,
+					elementOff);
+
 			if (excess && weather) {
 
 				if (gte(soc, battery.pvExcessOn())) {
-					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
-							"Battery SoC %s above SoC for excess PV start threshold %s %%".formatted(soc, battery.pvExcessOn())));
+
+					if (canRunElement) {
+						return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
+								"Battery SoC %s above excess PV start threshold %s %% and generator power %s covers heat element %s"
+										.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
+					}
+
+					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
+							"Battery SoC %s above excess PV start threshold %s %% but generator power %s below heat element draw %s, staying on compressor"
+									.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
 				}
 
 				if (currentState == SgReadyState.NORMAL) {
 					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Battery SoC %s below SoC for excess PV start threshold %s %%, switching from normal to available"
+							"Battery SoC %s below excess PV start threshold %s %%, switching from normal to available"
 									.formatted(soc, battery.pvExcessOn())));
 				}
 
+				if (currentState == SgReadyState.EXCESS_PV && !canRunElement) {
+					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
+							"Retaining within hysteresis but generator power %s below heat element draw %s, downgrading to compressor"
+									.formatted(generatorPower, elementOn)));
+				}
+
 				return new Decision(currentState,
-						qualifiesForExcessPower.nestedMatch("Battery SoC %s SoC retaining %s".formatted(soc, currentState)));
-			} else if (gte(soc, battery.pvAvailable())) {
+						qualifiesForExcessPower.nestedMatch("Battery SoC %s retaining %s".formatted(soc, currentState)));
+			} else if (Hysteresis.active(consuming, soc, battery.pvAvailable(),
+					battery.pvAvailable().subtract(properties.getAvailableSocOffMargin()))) {
 				return Decision.availablePv(qualifiesForExcessPower
 						.nestedMatch("Battery SoC %s above required SoC threshold %s %%".formatted(soc, battery.pvAvailable())));
 			} else {

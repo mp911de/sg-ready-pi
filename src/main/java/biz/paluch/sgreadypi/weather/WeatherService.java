@@ -223,11 +223,9 @@ public class WeatherService {
 			double cov;
 
 			if (next != null) {
-
-				double thisPart = Duration.between(coverage.time(), from).toSeconds();
-				double nextPart = Duration.between(from, next.time()).toSeconds();
-
-				cov = (coverage.coverage() * (thisPart / 3600)) + (next.coverage() * (nextPart / 3600));
+				// average cloud cover across the whole hour rather than weighting by where "now" falls within
+				// it; assumes the hourly forecast resolution produced by WeatherClient.
+				cov = (coverage.coverage() + next.coverage()) / 2.0;
 				currentTime = next.time();
 			} else {
 				cov = coverage.coverage();
@@ -243,7 +241,8 @@ public class WeatherService {
 				endReached = true;
 			}
 
-			if (cov < MAX_ACCEPTABLE_CLOUD_COVERAGE) {
+			// guard against a negative interval once "now" has passed the sunset limit
+			if (cov < MAX_ACCEPTABLE_CLOUD_COVERAGE && endBoundary.isAfter(from)) {
 				sunnyTime.add(Duration.between(from, endBoundary));
 			}
 

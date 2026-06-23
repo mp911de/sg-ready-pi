@@ -86,8 +86,26 @@ class WeatherServiceUnitTests {
 		when(client.getWeatherState(any())).thenReturn(state);
 
 		WeatherService.Range usableTimeRange = service.getUsableTimeRange();
-		assertThat(usableTimeRange.remainingSunDuration().toString()).contains("4H53M");
+		// whole-hour averaging: the 10:00 (clear) -> 11:00 (overcast) partial hour averages to 50% and counts as sunny
+		assertThat(usableTimeRange.remainingSunDuration().toString()).contains("5H37M");
 		assertThat(usableTimeRange.enoughRemainingSunHours()).isTrue();
+	}
+
+	@Test
+	void shouldClampNegativeRemainingSunToZeroPastSunsetLimit() {
+
+		Clock clock = Clock.fixed(Instant.parse("2007-12-03T19:00:00.00Z"), ZoneId.of("Europe/Paris"));
+		WeatherService service = new WeatherService(properties, client, clock);
+
+		WeatherState state = new WeatherState(0, 0,
+				List.of(new CloudCoverage(LocalDateTime.parse("2007-12-03T10:00:00.00"), 0),
+						new CloudCoverage(LocalDateTime.parse("2007-12-03T11:00:00.00"), 0)));
+		when(client.getWeatherState(any())).thenReturn(state);
+
+		WeatherService.Range usableTimeRange = service.getUsableTimeRange();
+
+		assertThat(usableTimeRange.remainingSunDuration()).isEqualTo(Duration.ZERO);
+		assertThat(usableTimeRange.remainingSunDuration().isNegative()).isFalse();
 	}
 
 	@Test
