@@ -153,4 +153,40 @@ class WeatherServiceUnitTests {
 
 		assertThat(service.getUsableTimeRange()).isNull();
 	}
+
+	@Test
+	void elevationCutoffReducesUsableLimitBelowTheTimeGate() {
+
+		properties.setLatitude(53.4138213);
+		properties.setLongitude(7.1646956);
+		properties.setMinSunElevation(30);
+		properties.setNotBeforeSunset(Duration.ofMinutes(90));
+
+		Clock clock = Clock.fixed(Instant.parse("2026-06-21T10:00:00.00Z"), ZoneId.of("Europe/Berlin"));
+		WeatherService service = new WeatherService(properties, client, clock);
+		when(client.getWeatherState(any())).thenReturn(new WeatherState(0, 0, List.of()));
+
+		WeatherService.Range range = service.getUsableTimeRange();
+
+		// the 30 deg elevation cutoff is reached well before sunset - 90 min, so it governs the window end
+		assertThat(range.to()).isBefore(range.sunset().minusMinutes(90));
+	}
+
+	@Test
+	void timeGateWinsWhenEarlierThanElevationCutoff() {
+
+		properties.setLatitude(53.4138213);
+		properties.setLongitude(7.1646956);
+		properties.setMinSunElevation(30);
+		properties.setNotBeforeSunset(Duration.ofHours(6));
+
+		Clock clock = Clock.fixed(Instant.parse("2026-06-21T06:00:00.00Z"), ZoneId.of("Europe/Berlin"));
+		WeatherService service = new WeatherService(properties, client, clock);
+		when(client.getWeatherState(any())).thenReturn(new WeatherState(0, 0, List.of()));
+
+		WeatherService.Range range = service.getUsableTimeRange();
+
+		// the 6 h time gate is earlier than the elevation cutoff, so it governs
+		assertThat(range.to()).isEqualTo(range.sunset().minusHours(6));
+	}
 }

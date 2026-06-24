@@ -183,18 +183,27 @@ public class WeatherService {
 
 		LocalDateTime sunset = getSunset();
 		LocalDateTime now = LocalDateTime.now(clock);
-		LocalDateTime beforeSunsetLimit = sunset.minus(properties.getNotBeforeSunset());
+		LocalDateTime usableLimit = sunset.minus(properties.getNotBeforeSunset());
+
+		// additionally cap the window when the sun drops too low to cover the configured power (clear-sky geometry);
+		// the window ends at whichever comes first, the not-before-sunset limit or the elevation cutoff.
+		double minSunElevation = properties.getMinSunElevation();
+		if (minSunElevation > 0) {
+			LocalDateTime elevationCutoff = calculator.getDescendingElevationTime(getRequiredPosition(), minSunElevation);
+			if (elevationCutoff.isBefore(usableLimit)) {
+				usableLimit = elevationCutoff;
+			}
+		}
 
 		boolean afterSunset = now.isAfter(sunset);
-		boolean afterSunsetLimit = now.isAfter(beforeSunsetLimit);
+		boolean afterSunsetLimit = now.isAfter(usableLimit);
 
-		Duration remainingSun = getRemainingSunDuration(weatherState, now, beforeSunsetLimit);
+		Duration remainingSun = getRemainingSunDuration(weatherState, now, usableLimit);
 		boolean enoughRemainingSunHours = remainingSun.compareTo(properties.getDesiredExcessDuration()) > 0;
 
-		LocalDateTime from = enoughRemainingSunHours ? beforeSunsetLimit.minus(properties.getDesiredExcessDuration())
+		LocalDateTime from = enoughRemainingSunHours ? usableLimit.minus(properties.getDesiredExcessDuration())
 				: now.minusMinutes(1);
-		return new Range(from, beforeSunsetLimit, sunset, afterSunset, afterSunsetLimit, enoughRemainingSunHours,
-				remainingSun);
+		return new Range(from, usableLimit, sunset, afterSunset, afterSunsetLimit, enoughRemainingSunHours, remainingSun);
 	}
 
 	private static Duration getRemainingSunDuration(WeatherState weatherState, LocalDateTime now,
@@ -265,7 +274,8 @@ public class WeatherService {
 	 * reach the decision.
 	 *
 	 * @param from the start of the usable window.
-	 * @param to the end of the usable window, that is the not-before-sunset limit.
+	 * @param to the end of the usable window: whichever comes first, the not-before-sunset limit or the sun-elevation
+	 *          cutoff.
 	 * @param sunset the calculated sunset time.
 	 * @param afterSunset whether the current time is already past sunset.
 	 * @param afterSunsetLimit whether the current time is already past the not-before-sunset limit.

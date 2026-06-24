@@ -295,6 +295,14 @@ public class SgReadyProperties {
 		private Duration notBeforeSunset = Duration.ofHours(1).plus(Duration.ofMinutes(30));
 
 		/**
+		 * Sun elevation in degrees below which the panels are not expected to cover the relevant power draw. Used in
+		 * addition to {@link #notBeforeSunset} to cap the usable excess window: the window ends at whichever comes first,
+		 * the not-before-sunset limit or the time the descending sun crosses this elevation. {@code 0} disables the
+		 * elevation cutoff.
+		 */
+		private double minSunElevation = 0;
+
+		/**
 		 * Duration of {@link SgReadyState#EXCESS_PV} that we want to consume depending on weather predictions. The default
 		 * is to stop {@link SgReadyState#EXCESS_PV} until the duration before sunset is reached. In cases, where some hours
 		 * before sunset is cloudy, we know that we won't have enough energy, so we try to start earlier consume excess
@@ -324,6 +332,10 @@ public class SgReadyProperties {
 			return this.notBeforeSunset;
 		}
 
+		public double getMinSunElevation() {
+			return this.minSunElevation;
+		}
+
 		public Duration getDesiredExcessDuration() {
 			return this.desiredExcessDuration;
 		}
@@ -344,6 +356,10 @@ public class SgReadyProperties {
 			this.notBeforeSunset = notBeforeSunset;
 		}
 
+		public void setMinSunElevation(double minSunElevation) {
+			this.minSunElevation = minSunElevation;
+		}
+
 		public void setDesiredExcessDuration(Duration desiredExcessDuration) {
 			this.desiredExcessDuration = desiredExcessDuration;
 		}
@@ -351,7 +367,8 @@ public class SgReadyProperties {
 		public String toString() {
 			return "SgReadyProperties.Weather(enabled=" + this.isEnabled() + ", latitude=" + this.getLatitude()
 					+ ", longitude=" + this.getLongitude() + ", notBeforeSunset=" + this.getNotBeforeSunset()
-					+ ", desiredExcessDuration=" + this.getDesiredExcessDuration() + ")";
+					+ ", minSunElevation=" + this.getMinSunElevation() + ", desiredExcessDuration="
+					+ this.getDesiredExcessDuration() + ")";
 		}
 	}
 

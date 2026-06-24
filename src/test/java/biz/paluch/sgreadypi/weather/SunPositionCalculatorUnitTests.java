@@ -15,23 +15,60 @@
  */
 package biz.paluch.sgreadypi.weather;
 
+import static org.assertj.core.api.Assertions.*;
+
+import net.e175.klaus.solarpositioning.DeltaT;
+import net.e175.klaus.solarpositioning.SPA;
+import net.e175.klaus.solarpositioning.SolarPosition;
+
 import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Mark Paluch
  */
 class SunPositionCalculatorUnitTests {
 
+	GeoPosition position = new GeoPosition(53.4138213, 7.1646956);
+
 	@Test
-	void name() {
+	void shouldCalculateSunset() {
+		new SunPositionCalculator(Clock.systemDefaultZone()).getSunset(position);
+	}
 
-		SunPositionCalculator calculator = new SunPositionCalculator(Clock.systemDefaultZone());
+	@Test
+	void descendingElevationTimeMatchesRequestedElevation() {
 
-		calculator.getSunset(new GeoPosition(53.4138213, 7.1646956));
+		ZoneId zone = ZoneId.of("Europe/Berlin");
+		Clock clock = Clock.fixed(Instant.parse("2026-06-21T10:00:00.00Z"), zone);
+		SunPositionCalculator calculator = new SunPositionCalculator(clock);
 
+		LocalDateTime cutoff = calculator.getDescendingElevationTime(position, 30);
+
+		assertThat(cutoff).isBefore(calculator.getSunset(position));
+		assertThat(cutoff.toLocalTime()).isAfter(LocalTime.NOON);
+
+		double deltaT = DeltaT.estimate(cutoff.toLocalDate());
+		SolarPosition at = SPA.calculateSolarPosition(cutoff.atZone(zone), position.latitude(), position.longitude(), 0,
+				deltaT);
+		assertThat(90 - at.zenithAngle()).isCloseTo(30, within(0.5));
+	}
+
+	@Test
+	void returnsTransitWhenSunNeverReachesElevation() {
+
+		ZoneId zone = ZoneId.of("Europe/Berlin");
+		Clock clock = Clock.fixed(Instant.parse("2026-12-21T10:00:00.00Z"), zone);
+		SunPositionCalculator calculator = new SunPositionCalculator(clock);
+
+		// midwinter noon sun at 53 N stays around ~13 deg, well below 30 deg
+		LocalDateTime cutoff = calculator.getDescendingElevationTime(position, 30);
+
+		assertThat(cutoff.toLocalTime()).isBetween(LocalTime.of(11, 0), LocalTime.of(13, 30));
 	}
 }
