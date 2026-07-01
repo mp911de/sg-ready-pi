@@ -80,7 +80,7 @@ public class WeatherService {
 	 * the request straight through to the {@link WeatherClient} rather than waiting for the background refresh, fetching
 	 * under a lock so concurrent callers do not issue duplicate requests.
 	 *
-	 * @return the weather state; never {@literal null}.
+	 * @return the weather state.
 	 * @throws RuntimeException if the forecast has never been loaded and the pass-through fetch fails.
 	 */
 	public WeatherState getWeatherState() {
@@ -138,7 +138,7 @@ public class WeatherService {
 	/**
 	 * Return the sunset time for the configured position.
 	 *
-	 * @return the local sunset date-time; never {@literal null}.
+	 * @return the local sunset date-time.
 	 */
 	public LocalDateTime getSunset() {
 		return calculator.getSunset(getRequiredPosition());
@@ -147,7 +147,7 @@ public class WeatherService {
 	/**
 	 * Return the current sun position for the configured position.
 	 *
-	 * @return the current sun position in decimal degrees; never {@literal null}.
+	 * @return the current sun position in decimal degrees.
 	 */
 	public SunPosition getSunPosition() {
 		return calculator.getSunPosition(getRequiredPosition());

@@ -21,15 +21,17 @@ import javax.measure.quantity.Power;
 
 /**
  * Snapshot of the sensed inputs a {@link Decision} is made from: power {@code ingress} from the grid, the solar
- * {@code generatorPower} surplus, the battery {@code soc} (state of charge), and whether any input is
- * {@code outOfService}.
+ * {@code generatorPower} surplus, the battery {@code soc} (state of charge), the net {@code batteryDischarge}, and
+ * whether any input is {@code outOfService}.
  *
  * @param ingress power drawn from the grid.
  * @param generatorPower usable solar surplus.
  * @param soc battery state of charge.
+ * @param batteryDischarge net power drawn from the batteries (discharging minus charging); negative while charging
+ *          dominates.
  * @param outOfService whether the power generator or power meter data is too stale to trust.
  * @author Mark Paluch
  */
 public record Conditions(Quantity<Power> ingress, Quantity<Power> generatorPower, Quantity<Dimensionless> soc,
-		boolean outOfService) {
+		Quantity<Power> batteryDischarge, boolean outOfService) {
 }

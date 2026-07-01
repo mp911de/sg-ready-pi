@@ -43,7 +43,7 @@ public class Percent {
 	/**
 	 * Return a cached zero-percent quantity.
 	 *
-	 * @return the zero-percent quantity; never {@literal null}.
+	 * @return the zero-percent quantity.
 	 */
 	public static Quantity<Dimensionless> zero() {
 		return ZERO;

@@ -35,10 +35,9 @@ class Hysteresis {
 	 *
 	 * @param <Q> the quantity dimension being compared.
 	 * @param active whether the gate is currently considered active (the previous outcome).
-	 * @param value the current value to test; must not be {@literal null}.
-	 * @param on the upper threshold required to switch the gate on; must not be {@literal null} and should be greater
-	 *          than or equal to {@code off}.
-	 * @param off the lower threshold at or below which an active gate switches off; must not be {@literal null}.
+	 * @param value the current value to test.
+	 * @param on the upper threshold required to switch the gate on and should be greater than or equal to {@code off}.
+	 * @param off the lower threshold at or below which an active gate switches off.
 	 * @return {@literal true} if the gate should be active for {@code value}; {@literal false} otherwise.
 	 */
 	static <Q extends Quantity<Q>> boolean active(boolean active, Quantity<Q> value, Quantity<Q> on, Quantity<Q> off) {

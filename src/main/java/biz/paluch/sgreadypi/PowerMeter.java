@@ -29,14 +29,14 @@ public interface PowerMeter {
 	/**
 	 * Return ingress statistics, the power drawn from the external grid.
 	 *
-	 * @return ingress power statistics; never {@literal null}.
+	 * @return ingress power statistics.
 	 */
 	Statistics<Power> getIngress();
 
 	/**
 	 * Return egress statistics, the power fed into the external grid.
 	 *
-	 * @return egress power statistics; never {@literal null}.
+	 * @return egress power statistics.
 	 */
 	Statistics<Power> getEgress();
 

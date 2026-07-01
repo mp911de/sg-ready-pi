@@ -63,6 +63,7 @@ class SgReadyControlLoopUnitTests {
 		when(inverters.hasData()).thenReturn(true);
 		when(powerMeter.hasData()).thenReturn(true);
 		when(inverters.getGeneratorPower()).thenReturn(Statistics.just(Watt.zero()));
+		when(inverters.getBatteryDischarge()).thenReturn(Statistics.just(Watt.zero()));
 		when(inverters.getBatteryStateOfCharge()).thenReturn(Percent.zero());
 		when(powerMeter.getIngress()).thenReturn(Statistics.just(Watt.zero()));
 	}

@@ -87,6 +87,14 @@ public class SgReadyProperties {
 	Quantity<Power> ingressLimit = Watt.of(200);
 
 	/**
+	 * Net battery discharge (discharging minus charging across all inverters) above which {@link SgReadyState#EXCESS_PV}
+	 * degrades to {@link SgReadyState#AVAILABLE_PV}, protecting the battery from powering the heat element. Hysteresis
+	 * via {@link #generatorPowerOffRatio}: once degraded, excess PV is re-allowed only after discharge falls below
+	 * {@code dischargeLimit * ratio}. {@code 0} (the default) disables the gate.
+	 */
+	Quantity<Power> dischargeLimit = Watt.zero();
+
+	/**
 	 * Limit {@link SgReadyState#EXCESS_PV} to not be applied before a specific local time.
 	 */
 	@Nullable LocalTime excessNotBefore;
@@ -164,6 +172,10 @@ public class SgReadyProperties {
 		return this.ingressLimit;
 	}
 
+	public Quantity<Power> getDischargeLimit() {
+		return this.dischargeLimit;
+	}
+
 	public @Nullable LocalTime getExcessNotBefore() {
 		return this.excessNotBefore;
 	}
@@ -228,6 +240,10 @@ public class SgReadyProperties {
 		this.ingressLimit = ingressLimit;
 	}
 
+	public void setDischargeLimit(Quantity<Power> dischargeLimit) {
+		this.dischargeLimit = dischargeLimit;
+	}
+
 	public void setExcessNotBefore(@Nullable LocalTime excessNotBefore) {
 		this.excessNotBefore = excessNotBefore;
 	}
@@ -265,7 +281,8 @@ public class SgReadyProperties {
 				+ ", inverterPort=" + this.getInverterPort() + ", queryInterval=" + this.getQueryInterval() + ", averaging="
 				+ this.getAveraging() + ", heatPumpPowerConsumption=" + this.getHeatPumpPowerConsumption()
 				+ ", heatElementPowerConsumption=" + this.getHeatElementPowerConsumption() + ", ingressLimit="
-				+ this.getIngressLimit() + ", excessNotBefore=" + this.getExcessNotBefore() + ", excessNotAfter="
+				+ this.getIngressLimit() + ", dischargeLimit=" + this.getDischargeLimit() + ", excessNotBefore="
+				+ this.getExcessNotBefore() + ", excessNotAfter="
 				+ this.getExcessNotAfter() + ", battery=" + this.getBattery() + ", generatorPowerOffRatio="
 				+ this.getGeneratorPowerOffRatio() + ", availableSocOffMargin=" + this.getAvailableSocOffMargin() + ", gpio="
 				+ this.getGpio() + ", debounce="

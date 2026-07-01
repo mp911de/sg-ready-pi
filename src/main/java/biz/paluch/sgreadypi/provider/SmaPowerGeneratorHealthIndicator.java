@@ -73,6 +73,7 @@ record SmaPowerGeneratorHealthIndicator(SmaPowerGeneratorService powerGenerator)
 		Statistics<Power> generatorPower = powerGenerator.getGeneratorPower();
 		builder.withDetail("generator-power", generatorPower.getAverage().toString());
 		builder.withDetail("generator-power-momentary", generatorPower.getMostRecent().toString());
+		builder.withDetail("battery-discharge", powerGenerator.getBatteryDischarge().getAverage().toString());
 		builder.withDetail("battery-soc", powerGenerator.getBatteryStateOfCharge().toString());
 
 		stateMap.forEach((inverter, inverterState) -> {

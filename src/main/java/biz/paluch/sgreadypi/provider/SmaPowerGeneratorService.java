@@ -28,13 +28,12 @@ import tech.units.indriya.unit.Units;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
@@ -59,17 +58,12 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 	private final Map<String, SmaModbusClient> clients = new LinkedHashMap<>();
 	private final Map<String, InverterState> stateMap = new ConcurrentHashMap<>();
 
-	private final Map<String, MutableStatistics<Power>> stats = Collections.synchronizedMap(new LinkedHashMap<>());
+	private final Map<String, MutableStatistics<Power>> solarStats = new ConcurrentHashMap<>();
+	private final Map<String, MutableStatistics<Power>> dischargeStats = new ConcurrentHashMap<>();
 
 	private final SgReadyProperties properties;
 	private final TaskScheduler executorService;
 	private volatile @Nullable ScheduledFuture<?> schedule;
-
-	private final Supplier<SmaModbusRequest> requestFactory = () -> new SmaModbusRequest.Builder(
-			SmaModbusRequest.Type.READ).addRegister(ModbusRegister.CURRENT_ACTIVE_POWER)
-			.addRegister(ModbusRegister.BATTERY_CURRENT_DISCHARGING).addRegister(ModbusRegister.BATTERY_CURRENT_CHARGING)
-			.addRegister(ModbusRegister.CURRENT_BATTERY_STATE_OF_CHARGE).addRegister(ModbusRegister.CURRENT_BATTERY_CAPACITY)
-			.build();
 
 	public SmaPowerGeneratorService(SgReadyProperties properties, TaskScheduler executorService) {
 		this.properties = properties;
@@ -94,7 +88,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	private void readInverters() {
 
-		clients.forEach((host, client) -> client.read(requestFactory.get())
+		clients.forEach((host, client) -> client.read(createRequest())
 
 				.doOnError(err -> log.error("InverterService failed to read from " + host, err)).subscribe(response -> {
 
@@ -110,13 +104,20 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 					log.debug("Inverter at {} state {}", host, state);
 
 					stateMap.put(host, state);
-
-					MutableStatistics<Power> statistics = stats.computeIfAbsent(host,
-							it -> MutableStatistics.create(properties.getAveraging(), Units.WATT));
-
-					statistics.update(InverterState.getSolarPower(state));
-
+					statistics(solarStats, host).update(state.getSolarPower());
+					statistics(dischargeStats, host).update(state.getBatteryDischarge());
 				}));
+	}
+
+	private static SmaModbusRequest createRequest() {
+		return new SmaModbusRequest.Builder(SmaModbusRequest.Type.READ).addRegister(ModbusRegister.CURRENT_ACTIVE_POWER)
+				.addRegister(ModbusRegister.BATTERY_CURRENT_DISCHARGING).addRegister(ModbusRegister.BATTERY_CURRENT_CHARGING)
+				.addRegister(ModbusRegister.CURRENT_BATTERY_STATE_OF_CHARGE)
+				.addRegister(ModbusRegister.CURRENT_BATTERY_CAPACITY).build();
+	}
+
+	private MutableStatistics<Power> statistics(Map<String, MutableStatistics<Power>> stats, String host) {
+		return stats.computeIfAbsent(host, it -> MutableStatistics.create(properties.getAveraging(), Units.WATT));
 	}
 
 	private static int getIntRegister(SmaModbusResponse response, ModbusRegister<Number> register) {
@@ -157,17 +158,31 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	@Override
 	public Statistics<Power> getGeneratorPower() {
+		return aggregate(solarStats);
+	}
+
+	@Override
+	public Statistics<Power> getBatteryDischarge() {
+		return aggregate(dischargeStats);
+	}
+
+	private static Statistics<Power> aggregate(Map<String, MutableStatistics<Power>> stats) {
 		return new Statistics<>() {
 			@Override
 			public Quantity<Power> getAverage() {
-				return Watt.of(stats.values().stream().mapToInt(it -> it.getAverage().getValue().intValue()).sum());
+				return sum(stats, Statistics::getAverage);
 			}
 
 			@Override
 			public Quantity<Power> getMostRecent() {
-				return Watt.of(stats.values().stream().mapToInt(it -> it.getMostRecent().getValue().intValue()).sum());
+				return sum(stats, Statistics::getMostRecent);
 			}
 		};
+	}
+
+	private static Quantity<Power> sum(Map<String, MutableStatistics<Power>> stats,
+			Function<Statistics<Power>, Quantity<Power>> value) {
+		return Watt.of(stats.values().stream().mapToInt(it -> value.apply(it).getValue().intValue()).sum());
 	}
 
 	public Map<String, InverterState> getStateMap() {
@@ -193,8 +208,24 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 
 	public record InverterState(int currentActivePower, boolean hasBattery, int batteryCharging, int batteryDischarging,
 			int stateOfCharge, Instant timestamp) implements RecencyTracker {
-		public static Quantity<Power> getSolarPower(InverterState state) {
-			return Watt.of(state.currentActivePower() + state.batteryCharging() - Math.abs(state.batteryDischarging()));
+
+		/**
+		 * The usable solar surplus: active power minus net battery discharge, so the figure reflects sun-derived power
+		 * rather than power pulled out of the battery (ADR-0004).
+		 */
+		public Quantity<Power> getSolarPower() {
+			return Watt.of(currentActivePower - dischargeWatts());
+		}
+
+		/**
+		 * Net battery discharge: power drawn from the battery minus power charging it. Negative while charging dominates.
+		 */
+		public Quantity<Power> getBatteryDischarge() {
+			return Watt.of(dischargeWatts());
+		}
+
+		private int dischargeWatts() {
+			return Math.abs(batteryDischarging) - batteryCharging;
 		}
 
 		@Override

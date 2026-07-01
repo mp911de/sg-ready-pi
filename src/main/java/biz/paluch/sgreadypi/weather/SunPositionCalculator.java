@@ -41,8 +41,8 @@ class SunPositionCalculator {
 	/**
 	 * Obtain the sun's apparent position at the given position for the current instant.
 	 *
-	 * @param geoPosition the geographic position to calculate the sun position for; must not be {@literal null}.
-	 * @return the current sun position in decimal degrees; never {@literal null}.
+	 * @param geoPosition the geographic position to calculate the sun position for.
+	 * @return the current sun position in decimal degrees.
 	 */
 	public SunPosition getSunPosition(GeoPosition geoPosition) {
 
@@ -78,9 +78,9 @@ class SunPositionCalculator {
 	 * never climbs above the requested elevation that day (for example in winter), and the transit fallback on polar days
 	 * without a regular sunset.
 	 *
-	 * @param geoPosition the position to evaluate; must not be {@literal null}.
+	 * @param geoPosition the position to evaluate.
 	 * @param elevationDegrees the sun elevation threshold in degrees above the horizon.
-	 * @return the local cutoff date-time; never {@literal null}.
+	 * @return the local cutoff date-time.
 	 */
 	public LocalDateTime getDescendingElevationTime(GeoPosition geoPosition, double elevationDegrees) {
 

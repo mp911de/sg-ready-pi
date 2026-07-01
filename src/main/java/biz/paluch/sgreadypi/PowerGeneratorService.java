@@ -33,7 +33,7 @@ public interface PowerGeneratorService {
 	/**
 	 * Return the aggregate battery state of charge across all inverters.
 	 *
-	 * @return the battery state of charge as a percentage; never {@literal null}.
+	 * @return the battery state of charge as a percentage.
 	 */
 	default Quantity<Dimensionless> getBatteryStateOfCharge() {
 		return Percent.zero();
@@ -42,9 +42,20 @@ public interface PowerGeneratorService {
 	/**
 	 * Return the generator power statistics, that is the usable solar surplus.
 	 *
-	 * @return generator power statistics in {@link tech.units.indriya.unit.Units#WATT}; never {@literal null}.
+	 * @return generator power statistics in {@link tech.units.indriya.unit.Units#WATT}.
 	 */
 	default Statistics<Power> getGeneratorPower() {
+		return Statistics.just(Watt.zero());
+	}
+
+	/**
+	 * Return the net battery discharge statistics, that is the power drawn from the batteries (discharging minus
+	 * charging) across all inverters.
+	 *
+	 * @return net battery discharge statistics in {@link tech.units.indriya.unit.Units#WATT}; negative values indicate
+	 *         net charging.
+	 */
+	default Statistics<Power> getBatteryDischarge() {
 		return Statistics.just(Watt.zero());
 	}
 

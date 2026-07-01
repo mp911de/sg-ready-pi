@@ -35,9 +35,10 @@ import org.jspecify.annotations.Nullable;
  * <p>
  * {@code SgReadyPolicy} turns the current {@link Conditions}, the previously signalled {@link SgReadyState}, optional
  * weather timing, and {@link SgReadyProperties} into a {@link Decision}. It contains the rule ordering for conservative
- * fallback, generator-power gating, battery state-of-charge thresholds, hysteresis, local time gates, and weather
- * deferral. It performs no I/O and does not apply debounce; callers such as {@link SgReadyControlLoop} are responsible
- * for obtaining readings, resolving a {@link WeatherService.Range}, and applying the resulting state.
+ * fallback, generator-power gating, battery state-of-charge thresholds, hysteresis, local time gates, weather deferral,
+ * and the battery discharge limit. It performs no I/O and does not apply debounce; callers such as
+ * {@link SgReadyControlLoop} are responsible for obtaining readings, resolving a {@link WeatherService.Range}, and
+ * applying the resulting state.
  * <p>
  * The policy evaluates safety gates first. Out-of-service input data or ingress above the configured limit returns
  * {@link SgReadyState#NORMAL}. Only when generator power is at least the configured heat pump power consumption does
@@ -74,24 +75,15 @@ public class SgReadyPolicy {
 	}
 
 	/**
-	 * Decide the {@link SgReadyState} for the given control-loop snapshot.
-	 * <p>
-	 * The method is deterministic for the supplied arguments. It does not read the system clock, query services, or
-	 * retain state between calls. Quantity values are expected to use compatible units supplied by the application
-	 * providers and configuration.
-	 * <p>
-	 * A non-{@literal null} {@code weatherRange} can defer or withhold {@link SgReadyState#EXCESS_PV} when enough sunny
-	 * time remains, after sunset, or after the sunset limit. It does not enable a PV state on its own; generator power,
-	 * ingress, state of charge, and configured time gates still decide the final state.
+	 * Determines the appropriate SG Ready decision based on the current system state, conditions, weather data, and the
+	 * current timestamp. This method evaluates system constraints, hysteresis conditions, weather predictions, and
+	 * battery charge levels to decide among NORMAL, AVAILABLE_PV, or EXCESS_PV states.
 	 *
-	 * @param currentState the state currently signalled; must not be {@literal null}. Used to retain the current state
-	 *          while battery state of charge remains within the excess-PV hysteresis band.
-	 * @param conditions the sensed input snapshot; must not be {@literal null}.
-	 * @param weatherRange the usable time range derived from the weather forecast, or {@literal null} when weather
-	 *          optimisation is disabled or unavailable.
-	 * @param currentTime the current local date-time used for configured time gates and reasoning messages; must not be
-	 *          {@literal null}.
-	 * @return the selected state together with the reasoning trail; guaranteed to be not {@literal null}.
+	 * @param currentState the current SG Ready state of the system.
+	 * @param conditions the operational conditions data including power readings and state of charge (SoC).
+	 * @param weatherRange the predicted weather information, including sunset times and available sunlight (may be null).
+	 * @param currentTime the current timestamp for evaluating time constraints and hysteresis.
+	 * @return a {@link Decision} object encapsulating the chosen SG Ready state and the reasoning behind the decision.
 	 */
 	public Decision decide(SgReadyState currentState, Conditions conditions, WeatherService.@Nullable Range weatherRange,
 			LocalDateTime currentTime) {
@@ -109,7 +101,7 @@ public class SgReadyPolicy {
 					ConditionOutcome.match("Ingress %s exceeds limit %s".formatted(ingress, properties.getIngressLimit())));
 		}
 
-		boolean consuming = currentState != SgReadyState.NORMAL;
+		boolean consuming = currentState.isAvailablePv() || currentState.isExcessPv();
 		Quantity<Power> generatorOn = properties.getHeatPumpPowerConsumption();
 		Quantity<Power> generatorOff = generatorOn.multiply(properties.getGeneratorPowerOffRatio());
 
@@ -158,14 +150,15 @@ public class SgReadyPolicy {
 
 		if (excess && weather) {
 
-			boolean canRunElement = Hysteresis.active(currentState == SgReadyState.EXCESS_PV, generatorPower, elementOn,
+			boolean canRunElement = Hysteresis.active(currentState.isExcessPv(), generatorPower, elementOn,
 					elementOff);
 			if (gte(soc, battery.pvExcessOn())) {
 
 				if (canRunElement) {
-					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
+					return withDischargeGate(Decision.excessPv(qualifiesForExcessPower.nestedMatch(
 							"Battery SoC %s above excess PV start threshold %s and generator power %s covers heat element %s"
-									.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
+									.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn))),
+							currentState, conditions);
 				}
 
 				return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
@@ -173,20 +166,22 @@ public class SgReadyPolicy {
 								.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
 			}
 
-			if (currentState == SgReadyState.NORMAL) {
+			if (currentState.isNormal()) {
 				return Decision.availablePv(qualifiesForExcessPower
 						.nestedNoMatch("Battery SoC %s below excess PV start threshold %s, switching from normal to available"
 								.formatted(soc, battery.pvExcessOn())));
 			}
 
-			if (currentState == SgReadyState.EXCESS_PV && !canRunElement) {
+			if (currentState.isExcessPv() && !canRunElement) {
 				return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
 						"Retaining within hysteresis but generator power %s below heat element draw %s, downgrading to available"
 								.formatted(generatorPower, elementOn)));
 			}
 
-			return new Decision(currentState,
-					qualifiesForExcessPower.nestedMatch("Battery SoC %s retaining %s".formatted(soc, currentState)));
+			return withDischargeGate(
+					new Decision(currentState,
+							qualifiesForExcessPower.nestedMatch("Battery SoC %s retaining %s".formatted(soc, currentState))),
+					currentState, conditions);
 		} else if (Hysteresis.active(consuming, soc, battery.pvAvailable(),
 				battery.pvAvailable().subtract(properties.getAvailableSocOffMargin()))) {
 			return Decision.availablePv(qualifiesForExcessPower
@@ -195,6 +190,34 @@ public class SgReadyPolicy {
 			return Decision.normal(qualifiesForExcessPower
 					.nestedNoMatch("Battery SoC %s below required SoC threshold %s".formatted(soc, battery.pvAvailable())));
 		}
+	}
+
+	/**
+	 * Apply the battery discharge gate to a tentative decision. When the gate is enabled (positive
+	 * {@link SgReadyProperties#getDischargeLimit() dischargeLimit}) and the decision would signal
+	 * {@link SgReadyState#EXCESS_PV}, net battery discharge above the limit degrades the decision to
+	 * {@link SgReadyState#AVAILABLE_PV}. The gate is hysteretic via
+	 * {@link SgReadyProperties#getGeneratorPowerOffRatio()}: once degraded, excess PV is re-allowed only after discharge
+	 * falls below {@code limit * ratio}. Decisions for other states pass through unchanged.
+	 */
+	private Decision withDischargeGate(Decision decision, SgReadyState currentState, Conditions conditions) {
+
+		Quantity<Power> limit = properties.getDischargeLimit();
+		if (!decision.state().isExcessPv() || limit.getValue().doubleValue() <= 0) {
+			return decision;
+		}
+
+		Quantity<Power> discharge = conditions.batteryDischarge();
+		Quantity<Power> reAllow = limit.multiply(properties.getGeneratorPowerOffRatio());
+
+		// blocking gate: engages once discharge reaches the limit, releases below limit * ratio
+		if (Hysteresis.active(!currentState.isExcessPv(), discharge, limit, reAllow)) {
+			return Decision.availablePv(decision.conditionOutcome().nestedNoMatch(
+					"Battery discharge %s blocks excess PV (limit %s, re-allow below %s)".formatted(discharge, limit, reAllow)));
+		}
+
+		return new Decision(decision.state(), decision.conditionOutcome()
+				.nestedMatch("Battery discharge %s within discharge limit %s".formatted(discharge, limit)));
 	}
 
 	private static ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
@@ -248,8 +271,8 @@ public class SgReadyPolicy {
 	 * Compare two quantities after converting the left-hand value to the right-hand unit.
 	 *
 	 * @param <Q> the quantity dimension being compared.
-	 * @param a the left-hand quantity; must not be {@literal null}.
-	 * @param b the right-hand quantity; must not be {@literal null}.
+	 * @param a the left-hand quantity.
+	 * @param b the right-hand quantity.
 	 * @return {@literal true} if {@code a} is greater than or equal to {@code b}; {@literal false} otherwise.
 	 */
 	static <Q extends Quantity<Q>> boolean gte(Quantity<Q> a, Quantity<Q> b) {

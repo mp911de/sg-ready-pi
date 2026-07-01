@@ -43,7 +43,7 @@ public class Watt {
 	/**
 	 * Return a cached zero-watt quantity.
 	 *
-	 * @return the zero-watt quantity; never {@literal null}.
+	 * @return the zero-watt quantity.
 	 */
 	public static Quantity<Power> zero() {
 		return ZERO;

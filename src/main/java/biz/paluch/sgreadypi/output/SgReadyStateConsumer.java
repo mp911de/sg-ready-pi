@@ -31,7 +31,7 @@ public interface SgReadyStateConsumer {
 	 * Implementations may be invoked repeatedly with the same state and should be idempotent. Implementations should not
 	 * block; long-running work should be dispatched elsewhere.
 	 *
-	 * @param state the state to apply; must not be {@literal null}.
+	 * @param state the state to apply.
 	 */
 	void onState(SgReadyState state);
 

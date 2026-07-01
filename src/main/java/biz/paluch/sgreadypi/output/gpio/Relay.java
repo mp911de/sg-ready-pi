@@ -29,7 +29,7 @@ public interface Relay extends SgReadyStateConsumer {
 	/**
 	 * Return the current {@link SgReadyState}.
 	 *
-	 * @return the state currently applied to the relay; never {@literal null}.
+	 * @return the state currently applied to the relay.
 	 */
 	SgReadyState getState();
 

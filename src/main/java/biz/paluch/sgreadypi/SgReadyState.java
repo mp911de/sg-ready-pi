@@ -64,10 +64,26 @@ public record SgReadyState(String name, boolean a, boolean b) {
 		return NORMAL;
 	}
 
+	public boolean isBlocked() {
+		return this == BLOCKED;
+	}
+
+	public boolean isNormal() {
+		return this == NORMAL;
+	}
+
+	public boolean isAvailablePv() {
+		return this == AVAILABLE_PV;
+	}
+
+	public boolean isExcessPv() {
+		return this == EXCESS_PV;
+	}
+
 	/**
 	 * Resolve a state from its {@link #name() name}.
 	 *
-	 * @param value the operating mode name to resolve; must not be {@literal null}.
+	 * @param value the operating mode name to resolve.
 	 * @return the matching state.
 	 * @throws IllegalArgumentException if {@code value} does not name a known state.
 	 */

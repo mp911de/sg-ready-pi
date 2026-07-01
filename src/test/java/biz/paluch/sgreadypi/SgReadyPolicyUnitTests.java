@@ -186,7 +186,7 @@ class SgReadyPolicyUnitTests {
 	@Test // ADR-0005
 	void shouldFallBackToNormalWhenOutOfService() {
 
-		Conditions outOfService = new Conditions(Watt.zero(), Watt.of(100), Percent.of(80), true);
+		Conditions outOfService = new Conditions(Watt.zero(), Watt.of(100), Percent.of(80), Watt.zero(), true);
 
 		Decision decision = decide(SgReadyState.EXCESS_PV, outOfService);
 
@@ -214,6 +214,59 @@ class SgReadyPolicyUnitTests {
 	void shouldWithholdExcessAfterSunset() {
 
 		Decision decision = policy.decide(SgReadyState.NORMAL, powered(80), range(false, true, true), now);
+
+		assertThat(decision.state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+	}
+
+	@Test
+	void shouldIgnoreDischargeWhenLimitDisabled() {
+
+		// default dischargeLimit of 0 disables the gate; heavy discharge does not withhold excess
+		Decision decision = decide(SgReadyState.NORMAL, conditions(0, 100, 80, 500));
+
+		assertThat(decision.state()).isEqualTo(SgReadyState.EXCESS_PV);
+	}
+
+	@Test
+	void shouldWithholdExcessAboveDischargeLimit() {
+
+		properties.setDischargeLimit(Watt.of(200));
+
+		Decision decision = decide(SgReadyState.NORMAL, conditions(0, 100, 80, 300));
+
+		assertThat(decision.state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+		assertThat(decision.conditionOutcome().explain())
+				.anySatisfy(entry -> assertThat(entry).contains("Battery discharge"));
+	}
+
+	@Test
+	void shouldApplyDischargeHysteresisOnEntry() {
+
+		properties.setDischargeLimit(Watt.of(200));
+
+		// 150 W is below the 200 W limit but above the 140 W re-allow threshold
+		assertThat(decide(SgReadyState.NORMAL, conditions(0, 100, 80, 150)).state()).isEqualTo(SgReadyState.AVAILABLE_PV);
+		assertThat(decide(SgReadyState.NORMAL, conditions(0, 100, 80, 139)).state()).isEqualTo(SgReadyState.EXCESS_PV);
+	}
+
+	@Test
+	void shouldDowngradeRunningExcessAboveDischargeLimit() {
+
+		properties.setDischargeLimit(Watt.of(200));
+
+		// active EXCESS_PV holds below the 200 W limit and downgrades once discharge reaches it
+		assertThat(decide(SgReadyState.EXCESS_PV, conditions(0, 100, 80, 150)).state()).isEqualTo(SgReadyState.EXCESS_PV);
+		assertThat(decide(SgReadyState.EXCESS_PV, conditions(0, 100, 80, 250)).state())
+				.isEqualTo(SgReadyState.AVAILABLE_PV);
+	}
+
+	@Test
+	void shouldDowngradeRetainedExcessAboveDischargeLimit() {
+
+		properties.setDischargeLimit(Watt.of(200));
+
+		// SoC 70 retains EXCESS_PV within the SoC hysteresis band; the discharge gate still downgrades
+		Decision decision = decide(SgReadyState.EXCESS_PV, conditions(0, 100, 70, 250));
 
 		assertThat(decision.state()).isEqualTo(SgReadyState.AVAILABLE_PV);
 	}
@@ -303,7 +356,11 @@ class SgReadyPolicyUnitTests {
 	}
 
 	private static Conditions conditions(int ingressWatt, int generatorWatt, int soc) {
-		return new Conditions(Watt.of(ingressWatt), Watt.of(generatorWatt), Percent.of(soc), false);
+		return conditions(ingressWatt, generatorWatt, soc, 0);
+	}
+
+	private static Conditions conditions(int ingressWatt, int generatorWatt, int soc, int dischargeWatt) {
+		return new Conditions(Watt.of(ingressWatt), Watt.of(generatorWatt), Percent.of(soc), Watt.of(dischargeWatt), false);
 	}
 
 	private static Conditions powered(int soc) {

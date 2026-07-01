@@ -18,11 +18,15 @@ package biz.paluch.sgreadypi.provider;
 import static org.assertj.core.api.Assertions.*;
 
 import biz.paluch.sgreadypi.SgReadyProperties;
+import biz.paluch.sgreadypi.measure.Watt;
 import tech.units.indriya.unit.Units;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+
+import javax.measure.quantity.Power;
 
 import org.junit.jupiter.api.Test;
 
@@ -50,6 +54,43 @@ class SmaPowerGeneratorServiceUnitTests {
 		stateMap.put("c", new SmaPowerGeneratorService.InverterState(0, false, 0, 0, 100, now));
 
 		assertThat(service.getBatteryStateOfCharge().to(Units.PERCENT).getValue().doubleValue()).isEqualTo(60);
+	}
+
+	@Test // ADR-0004
+	void shouldDeriveSolarPowerAndBatteryDischargeFromReadings() {
+
+		Instant now = Instant.parse("2026-05-24T00:00:00Z");
+		SmaPowerGeneratorService.InverterState discharging = new SmaPowerGeneratorService.InverterState(1000, true, 200,
+				500, 50, now);
+		SmaPowerGeneratorService.InverterState charging = new SmaPowerGeneratorService.InverterState(1000, true, 500, 0, 50,
+				now);
+
+		assertThat(discharging.getSolarPower().getValue().intValue()).isEqualTo(700);
+		assertThat(discharging.getBatteryDischarge().getValue().intValue()).isEqualTo(300);
+
+		assertThat(charging.getSolarPower().getValue().intValue()).isEqualTo(1500);
+		assertThat(charging.getBatteryDischarge().getValue().intValue()).isEqualTo(-500);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shouldSumBatteryDischargeAcrossInverters() {
+
+		SmaPowerGeneratorService service = new SmaPowerGeneratorService(properties(), new ConcurrentTaskScheduler());
+		Map<String, MutableStatistics<Power>> dischargeStats = (Map<String, MutableStatistics<Power>>) ReflectionTestUtils
+				.getField(service, "dischargeStats");
+
+		dischargeStats.put("a", statistics(300));
+		dischargeStats.put("b", statistics(-100));
+
+		assertThat(service.getBatteryDischarge().getMostRecent().getValue().intValue()).isEqualTo(200);
+	}
+
+	private static MutableStatistics<Power> statistics(int watt) {
+
+		MutableStatistics<Power> statistics = MutableStatistics.create(Duration.ofMinutes(5), Units.WATT);
+		statistics.update(Watt.of(watt));
+		return statistics;
 	}
 
 	private static SgReadyProperties properties() {

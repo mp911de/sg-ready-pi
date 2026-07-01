@@ -123,7 +123,8 @@ public class SgReadyControlLoop {
 	 */
 	private Conditions readConditions() {
 		return new Conditions(powerMeter.getIngress().getAverage(), inverters.getGeneratorPower().getAverage(),
-				inverters.getBatteryStateOfCharge(), inverters.isOutOfService() || powerMeter.isOutOfService());
+				inverters.getBatteryStateOfCharge(), inverters.getBatteryDischarge().getAverage(),
+				inverters.isOutOfService() || powerMeter.isOutOfService());
 	}
 
 	/**
@@ -133,8 +134,8 @@ public class SgReadyControlLoop {
 
 		Level level = changed ? Level.INFO : Level.DEBUG;
 		if (log.isEnabledForLevel(level)) {
-			log.atLevel(level).log(String.format("SG Ready: %s, Ingress %s, PV %s, SoC %s", state, conditions.ingress(),
-					conditions.generatorPower(), conditions.soc()));
+			log.atLevel(level).log(String.format("SG Ready: %s, Ingress %s, PV %s, SoC %s, Discharge %s", state,
+					conditions.ingress(), conditions.generatorPower(), conditions.soc(), conditions.batteryDischarge()));
 		}
 	}
 
