@@ -54,8 +54,8 @@ class SunPositionCalculatorUnitTests {
 		SolarPosition expected = SPA.calculateSolarPosition(instant.atZone(zone), position.latitude(), position.longitude(),
 				0, deltaT);
 
-		assertThat(sunPosition.azimuth()).isEqualTo(expected.azimuth());
-		assertThat(sunPosition.elevation()).isEqualTo(90 - expected.zenithAngle());
+		assertThat(sunPosition.azimuth()).isCloseTo(expected.azimuth(), within(1.0));
+		assertThat(sunPosition.elevation()).isCloseTo(90 - expected.zenithAngle(), within(1.0));
 		// midmorning midsummer sun at 53 N is well above the horizon
 		assertThat(sunPosition.elevation()).isGreaterThan(0);
 	}

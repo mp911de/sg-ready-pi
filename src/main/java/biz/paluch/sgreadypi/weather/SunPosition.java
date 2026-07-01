@@ -23,4 +23,9 @@ package biz.paluch.sgreadypi.weather;
  * @author Mark Paluch
  */
 public record SunPosition(double azimuth, double elevation) {
+
+	public SunPosition {
+		azimuth = Math.round(azimuth * 100) / 100d;
+		elevation = Math.round(elevation * 100) / 100d;
+	}
 }

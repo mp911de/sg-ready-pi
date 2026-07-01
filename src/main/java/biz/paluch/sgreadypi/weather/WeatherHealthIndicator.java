@@ -16,6 +16,7 @@
 package biz.paluch.sgreadypi.weather;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
@@ -47,15 +48,20 @@ record WeatherHealthIndicator(WeatherService weatherService) implements HealthIn
 		WeatherService.@Nullable Range timeRange = weatherService.getUsableTimeRange();
 
 		builder.withDetail("weather", weather);
-		builder.withDetail("sunset", sunset);
-		builder.withDetail("sunPosition", weatherService.getSunPosition());
+
+		Map<String, Object> sun = new LinkedHashMap<>();
+		sun.put("sunset", sunset);
+		sun.put("position", weatherService.getSunPosition());
 
 		if (timeRange != null) {
-			Map<String, ? extends Comparable<? extends Comparable<?>>> weatherDetail = Map.of("from", timeRange.from(),
-					"afterSunset", timeRange.afterSunset(), "afterSunsetLimit", timeRange.afterSunsetLimit(), "enoughSunHours",
-					timeRange.enoughRemainingSunHours());
-			builder.withDetail("detail", weatherDetail);
+			sun.put("usable-from", timeRange.from());
+			sun.put("usable-to", timeRange.to());
+			sun.put("afterSunset", timeRange.afterSunset());
+			sun.put("afterSunsetLimit", timeRange.afterSunsetLimit());
+			sun.put("enoughSunHours", timeRange.enoughRemainingSunHours());
 		}
+
+		builder.withDetail("sun", sun);
 	}
 
 }

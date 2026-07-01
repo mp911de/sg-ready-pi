@@ -45,6 +45,8 @@ import org.slf4j.Logger;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * {@link PowerGeneratorService} implementation based on Modbus communication supporting Sunny Tripower inverters.
  *
@@ -213,6 +215,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 		 * The usable solar surplus: active power minus net battery discharge, so the figure reflects sun-derived power
 		 * rather than power pulled out of the battery (ADR-0004).
 		 */
+		@JsonIgnore
 		public Quantity<Power> getSolarPower() {
 			return Watt.of(currentActivePower - dischargeWatts());
 		}
@@ -220,6 +223,7 @@ public class SmaPowerGeneratorService implements SmartLifecycle, PowerGeneratorS
 		/**
 		 * Net battery discharge: power drawn from the battery minus power charging it. Negative while charging dominates.
 		 */
+		@JsonIgnore
 		public Quantity<Power> getBatteryDischarge() {
 			return Watt.of(dischargeWatts());
 		}
