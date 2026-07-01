@@ -48,6 +48,7 @@ record WeatherHealthIndicator(WeatherService weatherService) implements HealthIn
 
 		builder.withDetail("weather", weather);
 		builder.withDetail("sunset", sunset);
+		builder.withDetail("sunPosition", weatherService.getSunPosition());
 
 		if (timeRange != null) {
 			Map<String, ? extends Comparable<? extends Comparable<?>>> weatherDetail = Map.of("from", timeRange.from(),

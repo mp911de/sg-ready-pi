@@ -144,6 +144,15 @@ public class WeatherService {
 		return calculator.getSunset(getRequiredPosition());
 	}
 
+	/**
+	 * Return the current sun position for the configured position.
+	 *
+	 * @return the current sun position in decimal degrees; never {@literal null}.
+	 */
+	public SunPosition getSunPosition() {
+		return calculator.getSunPosition(getRequiredPosition());
+	}
+
 	private SgReadyProperties.Weather getRequiredProperties() {
 
 		SgReadyProperties.Weather properties = this.properties;

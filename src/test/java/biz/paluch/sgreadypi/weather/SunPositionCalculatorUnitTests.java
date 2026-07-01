@@ -42,6 +42,25 @@ class SunPositionCalculatorUnitTests {
 	}
 
 	@Test
+	void sunPositionMatchesLibraryComputation() {
+
+		ZoneId zone = ZoneId.of("Europe/Berlin");
+		Instant instant = Instant.parse("2026-06-21T10:00:00.00Z");
+		Clock clock = Clock.fixed(instant, zone);
+
+		SunPosition sunPosition = new SunPositionCalculator(clock).getSunPosition(position);
+
+		double deltaT = DeltaT.estimate(instant.atZone(zone).toLocalDate());
+		SolarPosition expected = SPA.calculateSolarPosition(instant.atZone(zone), position.latitude(), position.longitude(),
+				0, deltaT);
+
+		assertThat(sunPosition.azimuth()).isEqualTo(expected.azimuth());
+		assertThat(sunPosition.elevation()).isEqualTo(90 - expected.zenithAngle());
+		// midmorning midsummer sun at 53 N is well above the horizon
+		assertThat(sunPosition.elevation()).isGreaterThan(0);
+	}
+
+	@Test
 	void descendingElevationTimeMatchesRequestedElevation() {
 
 		ZoneId zone = ZoneId.of("Europe/Berlin");

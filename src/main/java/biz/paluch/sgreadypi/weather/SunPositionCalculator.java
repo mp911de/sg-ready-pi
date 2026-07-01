@@ -39,6 +39,19 @@ class SunPositionCalculator {
 	}
 
 	/**
+	 * Obtain the sun's apparent position at the given position for the current instant.
+	 *
+	 * @param geoPosition the geographic position to calculate the sun position for; must not be {@literal null}.
+	 * @return the current sun position in decimal degrees; never {@literal null}.
+	 */
+	public SunPosition getSunPosition(GeoPosition geoPosition) {
+
+		ZonedDateTime now = clock.instant().atZone(clock.getZone());
+		double deltaT = DeltaT.estimate(now.toLocalDate());
+		return sunPosition(geoPosition, now, deltaT);
+	}
+
+	/**
 	 * Obtain the local time for the sunset at the given position.
 	 *
 	 * @param geoPosition the geographic position to calculate sunset for.
@@ -106,8 +119,12 @@ class SunPositionCalculator {
 	}
 
 	private static double elevation(GeoPosition geoPosition, ZonedDateTime time, double deltaT) {
+		return sunPosition(geoPosition, time, deltaT).elevation();
+	}
+
+	private static SunPosition sunPosition(GeoPosition geoPosition, ZonedDateTime time, double deltaT) {
 		SolarPosition position = SPA.calculateSolarPosition(time, geoPosition.latitude(), geoPosition.longitude(), 0,
 				deltaT);
-		return 90 - position.zenithAngle();
+		return new SunPosition(position.azimuth(), 90 - position.zenithAngle());
 	}
 }
