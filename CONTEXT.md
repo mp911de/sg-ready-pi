@@ -65,6 +65,18 @@ of the battery. See ADR-0004. _Avoid_: PV power, solar output, inverter output
 The battery charge level as a percentage; the controller's primary gate for moving between
 states. _Avoid_: charge level, battery percent
 
+**Battery Discharge**:
+Net power drawn from the batteries — discharging minus charging, summed across inverters;
+negative while charging dominates. The averaged value feeds the **Discharge Limit** gate.
+_Avoid_: battery drain, outflow
+
+**Discharge Limit**:
+The **Battery Discharge** threshold above which **Excess PV** degrades to **Available PV
+**,
+so the heat element does not run on stored energy. `0` (the default) disables the gate;
+once degraded, **Excess PV** is re-allowed only after discharge falls below
+`limit × generatorPowerOffRatio` (hysteresis). _Avoid_: max discharge, discharge cap
+
 **Heat Pump Power Consumption**:
 The configured expected draw of the heat pump; **Generator Power** must exceed it before
 any PV state is considered. _Avoid_: load, demand
@@ -108,8 +120,8 @@ Modelled by
 
 **Conditions**:
 The snapshot of sensed inputs a **Decision** is made from: **Ingress**, **Generator
-Power**, **State of Charge**, and whether any input is **Out of Service**. _Avoid_:
-readings, inputs, power readings, sensor state
+Power**, **State of Charge**, **Battery Discharge**, and whether any input is **Out of
+Service**. _Avoid_: readings, inputs, power readings, sensor state
 
 ### Weather optimisation
 
