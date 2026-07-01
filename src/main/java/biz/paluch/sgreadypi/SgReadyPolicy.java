@@ -113,89 +113,88 @@ public class SgReadyPolicy {
 		Quantity<Power> generatorOn = properties.getHeatPumpPowerConsumption();
 		Quantity<Power> generatorOff = generatorOn.multiply(properties.getGeneratorPowerOffRatio());
 
-		if (Hysteresis.active(consuming, generatorPower, generatorOn, generatorOff)) {
+		if (!Hysteresis.active(consuming, generatorPower, generatorOn, generatorOff)) {
+			return Decision.normal(ConditionOutcome.noMatch("Generator power below heat pump consumption"));
+		}
 
-			ConditionOutcome match = ConditionOutcome
-					.match("Generator power %s above heat pump consumption %s (hysteresis off %s)".formatted(generatorPower,
-							generatorOn, generatorOff));
+		ConditionOutcome match = ConditionOutcome
+				.match("Generator power %s above heat pump consumption %s (hysteresis off %s)".formatted(generatorPower,
+						generatorOn, generatorOff));
 
-			SgReadyProperties.Levels battery = properties.getBattery();
-			ConditionOutcome qualifiesForExcessPower = match.nested(qualifiesForExcessPower(battery,
-					properties.getExcessNotBefore(), properties.getExcessNotAfter(), soc, currentTime));
-			boolean excess = qualifiesForExcessPower.isMatch();
-			boolean weather = true;
+		SgReadyProperties.Levels battery = properties.getBattery();
+		ConditionOutcome qualifiesForExcessPower = match.nested(qualifiesForExcessPower(battery,
+				properties.getExcessNotBefore(), properties.getExcessNotAfter(), soc, currentTime));
+		boolean excess = qualifiesForExcessPower.isMatch();
+		boolean weather = true;
 
-			if (weatherRange != null) {
+		if (weatherRange != null) {
 
-				String sunset = TIME.format(weatherRange.sunset());
-				if (weatherRange.enoughRemainingSunHours()) {
+			String sunset = TIME.format(weatherRange.sunset());
+			if (weatherRange.enoughRemainingSunHours()) {
+				weather = false;
+				qualifiesForExcessPower = qualifiesForExcessPower
+						.nestedNoMatch("Enough remaining sunny time %s (Sunset: %s), starting at %s until %s".formatted(
+								format(weatherRange.remainingSunDuration()), sunset, TIMESTAMP.format(weatherRange.from()),
+								TIMESTAMP.format(weatherRange.to())));
+			} else {
+
+				if (weatherRange.afterSunset()) {
 					weather = false;
 					qualifiesForExcessPower = qualifiesForExcessPower
-							.nestedNoMatch("Enough remaining sunny time %s (Sunset: %s), starting at %s until %s".formatted(
-									format(weatherRange.remainingSunDuration()), sunset, TIMESTAMP.format(weatherRange.from()),
-									TIMESTAMP.format(weatherRange.to())));
+							.nestedNoMatch("After sunset (Sunset: %s)".formatted(sunset));
+				} else if (weatherRange.afterSunsetLimit()) {
+					weather = false;
+					qualifiesForExcessPower = qualifiesForExcessPower
+							.nestedNoMatch("After sunset limit (Sunset: %s)".formatted(sunset));
 				} else {
-
-					if (weatherRange.afterSunset()) {
-						weather = false;
-						qualifiesForExcessPower = qualifiesForExcessPower
-								.nestedNoMatch("After sunset (Sunset: %s)".formatted(sunset));
-					} else if (weatherRange.afterSunsetLimit()) {
-						weather = false;
-						qualifiesForExcessPower = qualifiesForExcessPower
-								.nestedNoMatch("After sunset limit (Sunset: %s)".formatted(sunset));
-					} else {
-						qualifiesForExcessPower = qualifiesForExcessPower.nestedMatch(
-								String.format("Using remaining %s sunny time", format(weatherRange.remainingSunDuration())));
-					}
+					qualifiesForExcessPower = qualifiesForExcessPower
+							.nestedMatch(String.format("Using remaining %s sunny time", format(weatherRange.remainingSunDuration())));
 				}
-			}
-
-			Quantity<Power> elementOn = properties.getHeatElementPowerConsumption();
-			Quantity<Power> elementOff = elementOn.multiply(properties.getGeneratorPowerOffRatio());
-			boolean canRunElement = Hysteresis.active(currentState == SgReadyState.EXCESS_PV, generatorPower, elementOn,
-					elementOff);
-
-			if (excess && weather) {
-
-				if (gte(soc, battery.pvExcessOn())) {
-
-					if (canRunElement) {
-						return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
-								"Battery SoC %s above excess PV start threshold %s and generator power %s covers heat element %s"
-										.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
-					}
-
-					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Battery SoC %s above excess PV start threshold %s but generator power %s below heat element draw %s, staying on compressor"
-									.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
-				}
-
-				if (currentState == SgReadyState.NORMAL) {
-					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Battery SoC %s below excess PV start threshold %s, switching from normal to available"
-									.formatted(soc, battery.pvExcessOn())));
-				}
-
-				if (currentState == SgReadyState.EXCESS_PV && !canRunElement) {
-					return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
-							"Retaining within hysteresis but generator power %s below heat element draw %s, downgrading to compressor"
-									.formatted(generatorPower, elementOn)));
-				}
-
-				return new Decision(currentState,
-						qualifiesForExcessPower.nestedMatch("Battery SoC %s retaining %s".formatted(soc, currentState)));
-			} else if (Hysteresis.active(consuming, soc, battery.pvAvailable(),
-					battery.pvAvailable().subtract(properties.getAvailableSocOffMargin()))) {
-				return Decision.availablePv(qualifiesForExcessPower
-						.nestedMatch("Battery SoC %s above required SoC threshold %s".formatted(soc, battery.pvAvailable())));
-			} else {
-				return Decision.normal(qualifiesForExcessPower
-						.nestedNoMatch("Battery SoC %s below required SoC threshold %s".formatted(soc, battery.pvAvailable())));
 			}
 		}
 
-		return Decision.normal(ConditionOutcome.noMatch("Generator power below heat pump consumption"));
+		Quantity<Power> elementOn = properties.getHeatElementPowerConsumption();
+		Quantity<Power> elementOff = elementOn.multiply(properties.getGeneratorPowerOffRatio());
+
+		if (excess && weather) {
+
+			boolean canRunElement = Hysteresis.active(currentState == SgReadyState.EXCESS_PV, generatorPower, elementOn,
+					elementOff);
+			if (gte(soc, battery.pvExcessOn())) {
+
+				if (canRunElement) {
+					return Decision.excessPv(qualifiesForExcessPower.nestedMatch(
+							"Battery SoC %s above excess PV start threshold %s and generator power %s covers heat element %s"
+									.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
+				}
+
+				return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
+						"Battery SoC %s above excess PV start threshold %s but generator power %s below heat element draw %s, staying on compressor"
+								.formatted(soc, battery.pvExcessOn(), generatorPower, elementOn)));
+			}
+
+			if (currentState == SgReadyState.NORMAL) {
+				return Decision.availablePv(qualifiesForExcessPower
+						.nestedNoMatch("Battery SoC %s below excess PV start threshold %s, switching from normal to available"
+								.formatted(soc, battery.pvExcessOn())));
+			}
+
+			if (currentState == SgReadyState.EXCESS_PV && !canRunElement) {
+				return Decision.availablePv(qualifiesForExcessPower.nestedNoMatch(
+						"Retaining within hysteresis but generator power %s below heat element draw %s, downgrading to available"
+								.formatted(generatorPower, elementOn)));
+			}
+
+			return new Decision(currentState,
+					qualifiesForExcessPower.nestedMatch("Battery SoC %s retaining %s".formatted(soc, currentState)));
+		} else if (Hysteresis.active(consuming, soc, battery.pvAvailable(),
+				battery.pvAvailable().subtract(properties.getAvailableSocOffMargin()))) {
+			return Decision.availablePv(qualifiesForExcessPower
+					.nestedMatch("Battery SoC %s above required SoC threshold %s".formatted(soc, battery.pvAvailable())));
+		} else {
+			return Decision.normal(qualifiesForExcessPower
+					.nestedNoMatch("Battery SoC %s below required SoC threshold %s".formatted(soc, battery.pvAvailable())));
+		}
 	}
 
 	private static ConditionOutcome qualifiesForExcessPower(SgReadyProperties.Levels battery,
@@ -235,8 +234,8 @@ public class SgReadyPolicy {
 		ConditionOutcome socBelowPvExcessOff = gte(soc, battery.pvExcessOff())
 				? ConditionOutcome
 						.match("Battery SoC %s above SoC for excess PV stop threshold %s".formatted(soc, battery.pvExcessOff()))
-				: ConditionOutcome.noMatch(
-						"Battery SoC %s below SoC for excess PV stop threshold %s".formatted(soc, battery.pvExcessOff()));
+				: ConditionOutcome
+						.noMatch("Battery SoC %s below SoC for excess PV stop threshold %s".formatted(soc, battery.pvExcessOff()));
 
 		return outcome == null ? socBelowPvExcessOff : outcome.nested(socBelowPvExcessOff);
 	}
